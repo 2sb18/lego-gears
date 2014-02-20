@@ -78,9 +78,31 @@
               (hash-ref results vals))
             args ...))))]))
 
-; an objective looks like '(up across ratio) 
 
+
+; an objective looks like '(up across ratio) 
 (define (solve-gear-ratio list-of-objectives)
+  (define (get-solutions list-of-objectives-left previous-gear)
+    (let ((up-left (caar list-of-objectives-left))
+          (across-left (cadar list-of-objectives-left))
+          (ratio-left (caddar list-of-objectives-left)))
+      (let ((solutions
+              (apply append
+                     (filter-map
+                       (lambda (combination)
+                         ; this gives back a list of solutions
+                         (combine-head-and-tails 
+                           combination
+                           (iter (cons
+                                   (list (- up-left (third combination))
+                                         (- across-left (fourth combination))
+                                         (- (* ratio-left (/ (second combination) (first combination)))))
+                                   (cdr list-of-objectives-left))
+                                 (second combination))))
+                       (get-possible-combinations previous-gear)))))
+        (if (= 0 (length solutions))
+          #f
+          solutions))))
   (define-memoized (iter list-of-objectives-left previous-gear)
                    (let ((up-left (caar list-of-objectives-left))
                          (across-left (cadar list-of-objectives-left))
@@ -92,23 +114,7 @@
                               '()
                               #f))
                            (else  
-                             (let ((solutions
-                                     (apply append
-                                            (filter-map
-                                              (lambda (combination)
-                                                ; this gives back a list of solutions
-                                                (combine-head-and-tails 
-                                                  combination
-                                                  (iter (cons
-                                                          (list (- up-left (third combination))
-                                                                (- across-left (fourth combination))
-                                                                (- (* ratio-left (/ (second combination) (first combination)))))
-                                                          (cdr list-of-objectives-left))
-                                                        (second combination))))
-                                              (get-possible-combinations previous-gear)))))
-                               (if (= 0 (length solutions))
-                                 #f
-                                 solutions))))))
+                             (get-solutions list-of-objectives-left previous-gear)))))
   (apply append
          (filter-map
            (lambda (starting-gear)

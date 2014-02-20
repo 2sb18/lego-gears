@@ -4,6 +4,8 @@
 
 ; future improvement: make the limit either horizontal or vertical
 
+; put a limit how number of negative combinations
+
 ; first let's just try to solve going from one gear type to another
 ;
 ; our next gear can go either up or down, but the across always has to be positive
@@ -76,36 +78,41 @@
               (hash-ref results vals))
             args ...))))]))
 
-(define (solve-gear-ratio up across ratio)
-  (define-memoized (iter up-left across-left ratio-left previous-gear)
-                   ; (doing-another)
-                   (cond ((< across-left 0) #f)
-                         ((< up-left 0) #f)
-                         ; ((< (* 1.25 up) (abs up-left)) #f)
-                         ((= across-left 0)
-                          (if (and (= up-left 0) (= ratio-left 1))
-                            '()
-                            #f))
-                         (else  
-                           (let ((solutions
-                                   (apply append
-                                          (filter-map
-                                            (lambda (combination)
-                                              ; this gives back a list of solutions
-                                              (combine-head-and-tails 
-                                                combination
-                                                (iter (- up-left (third combination))
-                                                      (- across-left (fourth combination))
-                                                      (- (* ratio-left (/ (second combination) (first combination))))
-                                                      (second combination))))
-                                            (get-possible-combinations previous-gear)))))
-                             (if (= 0 (length solutions))
-                               #f
-                               solutions)))))
+; an objective looks like '(up across ratio) 
+
+(define (solve-gear-ratio list-of-objectives)
+  (define-memoized (iter list-of-objectives-left previous-gear)
+                   (let ((up-left (caar list-of-objectives-left))
+                         (across-left (cadar list-of-objectives-left))
+                         (ratio-left (caddar list-of-objectives-left)))
+                     (cond ((< across-left 0) #f)
+                           ((< up-left 0) #f)
+                           ((= across-left 0)
+                            (if (and (= up-left 0) (= ratio-left 1))
+                              '()
+                              #f))
+                           (else  
+                             (let ((solutions
+                                     (apply append
+                                            (filter-map
+                                              (lambda (combination)
+                                                ; this gives back a list of solutions
+                                                (combine-head-and-tails 
+                                                  combination
+                                                  (iter (cons
+                                                          (list (- up-left (third combination))
+                                                                (- across-left (fourth combination))
+                                                                (- (* ratio-left (/ (second combination) (first combination)))))
+                                                          (cdr list-of-objectives-left))
+                                                        (second combination))))
+                                              (get-possible-combinations previous-gear)))))
+                               (if (= 0 (length solutions))
+                                 #f
+                                 solutions))))))
   (apply append
          (filter-map
            (lambda (starting-gear)
-             (iter up across ratio starting-gear))
+             (iter list-of-objectives starting-gear))
            gear-sizes)))
 
 (define (get-shortest-solutions solutions)
@@ -138,8 +145,8 @@
 ; 1. shortest solutions using '(24 20 16 12)
 ; 2. shortest solutions using '(24 20 16 12 8)
 ; 3. shortest solutions using '(40 36 24 20 16 12 8)
-(define (get-best-solutions up across ratio)
-  (let ((solutions (solve-gear-ratio up across ratio)))
+(define (get-best-solutions list-of-objectives)
+  (let ((solutions (solve-gear-ratio list-of-objectives)))
     (let ((awesome-solutions (get-shortest-solutions 
                                (get-solutions-with-preferred-gears
                                  solutions '(24 20 16 12))))

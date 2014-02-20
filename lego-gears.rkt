@@ -111,7 +111,9 @@
                            ((< up-left 0) #f)
                            ((= across-left 0)
                             (if (and (= up-left 0) (= ratio-left 1))
-                              '()
+                              (if (= 1 (length list-of-objectives-left))
+                                '()
+                                (get-solutions (cdr list-of-objectives-left) previous-gear)) 
                               #f))
                            (else  
                              (get-solutions list-of-objectives-left previous-gear)))))

@@ -109,10 +109,12 @@
            gear-sizes)))
 
 (define (get-shortest-solutions solutions)
-  (let ((shortest-length (foldr (lambda (x y) (if (< (length x) y) (length x) y))
-                                (length (car solutions))
-                                solutions)))
-    (filter (lambda (x) (= shortest-length (length x))) solutions)))
+  (if (= 0 (length solutions))
+    '()
+    (let ((shortest-length (foldr (lambda (x y) (if (< (length x) y) (length x) y))
+                                  (length (car solutions))
+                                  solutions)))
+      (filter (lambda (x) (= shortest-length (length x))) solutions))))
 
 (define (is-element-in-list? element lst)
   (cond ((null? lst) #f)
@@ -131,15 +133,23 @@
             (solution-with-preferred-gears? x list-of-preferred-gears))
           solutions))
 
-(define (get-common-solutions solutions)
-  (get-solutions-with-preferred-gears solutions common-gear-sizes))
-
-(define (get-awesome-solutions solutions)
-  (get-solutions-with-preferred-gears (get-shortest-solutions solutions)
-                                      '(24 20 16 12)))
-
-(define (get-good-solutions up across ratio)
-  (get-shortest-solutions 
-    (get-solutions-with-preferred-gears (solve-gear-ratio up across ratio)
-                                        '(24 20 16 12 8))))
+; "best" is pretty subjective. Here's the order in which I define best
+; solutions.
+; 1. shortest solutions using '(24 20 16 12)
+; 2. shortest solutions using '(24 20 16 12 8)
+; 3. shortest solutions using '(40 36 24 20 16 12 8)
+(define (get-best-solutions up across ratio)
+  (let ((solutions (solve-gear-ratio up across ratio)))
+    (let ((awesome-solutions (get-shortest-solutions 
+                               (get-solutions-with-preferred-gears
+                                 solutions '(24 20 16 12))))
+          (good-solutions (get-shortest-solutions 
+                            (get-solutions-with-preferred-gears
+                              solutions '(24 20 16 12 8))))
+          (alright-solutions (get-shortest-solutions
+                               (get-solutions-with-preferred-gears
+                                 solutions '(40 36 24 20 16 12 8)))))
+      (cond ((< 0 (length awesome-solutions)) awesome-solutions)
+            ((< 0 (length good-solutions)) good-solutions)
+            (else alright-solutions)))))
 

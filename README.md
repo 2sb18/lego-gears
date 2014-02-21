@@ -9,7 +9,6 @@ Let's say you have the following situation:
 
 ![the-situation](https://raw.github.com/2sb18/lego-gears/master/readme-pics/example-usage.jpg)
 
-https://raw.github.com/2sb18/lego-gears/master/readme-pics/problem.JPG
 Your gear train has to connect the two axle pins, and you need it to have a gear ratio of 2:-1. This means that when the gear on the left axle pin spins, the gear on the right axle pin will spin in the opposite direction at twice the speed. For your gear train to work, it has to span 5.5 units across and 2.6666 or 8/3 units up.
 
 I'm assuming you have Racket installed. If not, you can get it [here](http://racket-lang.org/download/).
@@ -34,7 +33,8 @@ Load in the lego-gears.rkt file:
 We're going to use the procedure called get-best-solutions. You call it like this:
 
  ```racket
-(get-best-solutions list-of-objectives)```
+(get-best-solutions list-of-objectives)
+```
 
 An objective is a list with following elements: up, across, ratio. We only have one objective, which would look like this: (note that it's best to use rational numbers instead of decimal numbers)
 

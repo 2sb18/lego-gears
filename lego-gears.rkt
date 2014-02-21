@@ -96,7 +96,7 @@
                            (iter (cons
                                    (list (- up-left (third combination))
                                          (- across-left (fourth combination))
-                                         (- (* ratio-left (/ (second combination) (first combination)))))
+                                         (- (* ratio-left (/ (first combination) (second combination)))))
                                    (cdr list-of-objectives-left))
                                  (second combination))))
                        (get-possible-combinations previous-gear)))))

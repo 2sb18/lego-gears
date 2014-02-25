@@ -1,6 +1,9 @@
 #lang racket
 
 (provide gear-combinations
+         gear-combinations-just-8
+         up-unit-in-mm
+         across-unit-in-mm
          common-gear-sizes
          gear-sizes)
 ; bigger-gear smaller-gear up sideways
@@ -9,6 +12,11 @@
 
 (define gear-sizes '(40 36 24 20 16 12 8))
 (define common-gear-sizes '(24 20 16 12 8))
+
+(define up-unit-in-mm 9.6)
+(define across-unit-in-mm 8.0)
+
+
 (define gear-combinations
   '(
     (40 36 ((1    9/2)
@@ -52,6 +60,16 @@
             (1/3  3)
             (4/3  5/2)
             (7/3  1)))
+    (36 36 ((0    9/2)
+            (1/3  9/2)
+            (2/3  9/2)
+            (5/3  4)
+            (7/3  7/2)
+            (10/3 2)
+            (11/3 1)
+            (11/3 1/2)
+            ; pretty tight, not great
+            (11/3 0) ))
     (36 24 ((1    7/2)
             (4/3  7/2)
             (2    3)
@@ -137,13 +155,14 @@
 
 
 
-(define gear-combinationsi-old
+(define gear-combinations-just-8
   '(
 
-    (8 8 ((0      1))
-     )))
+    (8 8 ((0      1)
+          (1      0)
+          ))))
 
-(define gear-combinations-meow
+(define gear-combinations-test
   '((16 8 ((0     3/2)
            ))))
 

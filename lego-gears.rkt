@@ -2,6 +2,27 @@
 
 (require "gear-ratios.rkt")
 
+(provide solve-gear-ratio
+         get-best-solutions)
+
+; define-memoized macro copied from John-Paul Verkamp's blog with his permission
+; http://blog.jverkamp.com/2012/10/20/memoization-in-racket/
+(define-syntax define-memoized
+  (syntax-rules ()
+    [(_ (f args ...) bodies ...)
+     (define f
+       ; store the cache as a hash of args => result
+       (let ([results (make-hash)])
+         ; need to do this to capture both the names and the values
+         (lambda (args ...)
+           ((lambda vals
+              ; if we haven't calculated it before, do so now
+              (when (not (hash-has-key? results vals))
+                (hash-set! results vals (begin bodies ...)))
+              ; return the cached result
+              (hash-ref results vals))
+            args ...))))]))
+
 ; future improvement: make the limit either horizontal or vertical
 
 ; put a limit how number of negative combinations
@@ -18,7 +39,8 @@
 ; (36 40 1 9/2)
 ; and there's the down move too
 ; (36 40 -1 9/2)
-(define (get-possible-combinations gear)
+(define-memoized 
+  (get-possible-combinations gear include-down?) 
   (let ((admissable-combinations (map (lambda (combination)
                                         (if (= (first combination) gear)
                                           combination
@@ -39,8 +61,9 @@
                                              (list (car x) (cadr x) (- (caddr x)) (cadddr x)))
                                            (filter (lambda (x) (not (= 0 (caddr x))))
                                                    positive-possibilities))))
-          ; (append positive-possibilities negative-possibilities))))
-          positive-possibilities)))
+          (if include-down?  
+            (append positive-possibilities negative-possibilities)
+            positive-possibilities))))
     (apply append (map expand-possibilities admissable-combinations))))
 
 ; solve-gear-ratio returns false if it doesn't work
@@ -60,29 +83,20 @@
                             (cons head-combo tail-combo))
                           tail-solutions))))
 
-; define-memoized macro copied from John-Paul Verkamp's blog with his permission
-; http://blog.jverkamp.com/2012/10/20/memoization-in-racket/
-(define-syntax define-memoized
-  (syntax-rules ()
-    [(_ (f args ...) bodies ...)
-     (define f
-       ; store the cache as a hash of args => result
-       (let ([results (make-hash)])
-         ; need to do this to capture both the names and the values
-         (lambda (args ...)
-           ((lambda vals
-              ; if we haven't calculated it before, do so now
-              (when (not (hash-has-key? results vals))
-                (hash-set! results vals (begin bodies ...)))
-              ; return the cached result
-              (hash-ref results vals))
-            args ...))))]))
-
-
+; the objectives are the points, and this procedure gives us the piecewise straight line distances
+; from point to point
+; this is the real physical distance
+(define (get-total-distance list-of-objectives)
+  (if (null? list-of-objectives)
+    0
+    (+ (sqrt (+ (expt (* up-unit-in-mm (caar list-of-objectives)) 2)
+                (expt (* across-unit-in-mm (cadar list-of-objectives)) 2)))
+       (get-total-distance (cdr list-of-objectives)))))
 
 ; an objective looks like '(up across ratio) 
-(define (solve-gear-ratio list-of-objectives)
-  (define (get-solutions list-of-objectives-left previous-gear)
+; this checks to make sure we're getting closer to our objective
+(define (solve-gear-ratio list-of-objectives include-down?)
+  (define (get-solutions list-of-objectives-left previous-gear) 
     (let ((up-left (caar list-of-objectives-left))
           (across-left (cadar list-of-objectives-left))
           (ratio-left (caddar list-of-objectives-left)))
@@ -93,13 +107,20 @@
                          ; this gives back a list of solutions
                          (combine-head-and-tails 
                            combination
-                           (iter (cons
-                                   (list (- up-left (third combination))
-                                         (- across-left (fourth combination))
-                                         (- (* ratio-left (/ (first combination) (second combination)))))
-                                   (cdr list-of-objectives-left))
-                                 (second combination))))
-                       (get-possible-combinations previous-gear)))))
+                           (let ((new-list-of-objectives-left
+                                   (cons
+                                     (list (- up-left (third combination))
+                                           (- across-left (fourth combination))
+                                           (- (* ratio-left (/ (first combination) (second combination)))))
+                                     (cdr list-of-objectives-left))))
+                             ; this is the part that makes sure we're getting closer
+                             ; to our objective
+                             ; we have to get at least 1mm closer to our goal
+                             (if (< (+ 1 (get-total-distance new-list-of-objectives-left))
+                                    (get-total-distance list-of-objectives-left))
+                               (iter new-list-of-objectives-left (second combination))
+                               #f))))
+                       (get-possible-combinations previous-gear include-down?)))))
         (if (= 0 (length solutions))
           #f
           solutions))))
@@ -108,7 +129,6 @@
                          (across-left (cadar list-of-objectives-left))
                          (ratio-left (caddar list-of-objectives-left)))
                      (cond ((< across-left 0) #f)
-                           ((< up-left 0) #f)
                            ((= across-left 0)
                             (if (and (= up-left 0) (= ratio-left 1))
                               (if (= 1 (length list-of-objectives-left))
@@ -153,8 +173,9 @@
 ; 1. shortest solutions using '(24 20 16 12)
 ; 2. shortest solutions using '(24 20 16 12 8)
 ; 3. shortest solutions using '(40 36 24 20 16 12 8)
+; best does not include down movements
 (define (get-best-solutions list-of-objectives)
-  (let ((solutions (solve-gear-ratio list-of-objectives)))
+  (let ((solutions (solve-gear-ratio list-of-objectives #f)))
     (let ((awesome-solutions (get-shortest-solutions 
                                (get-solutions-with-preferred-gears
                                  solutions '(24 20 16 12))))

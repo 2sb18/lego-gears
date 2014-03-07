@@ -23,6 +23,7 @@
               (hash-ref results vals))
             args ...))))]))
 
+; future improvement: have a procedure that removes self-intersections
 ; future improvement: make the limit either horizontal or vertical
 
 ; put a limit how number of negative combinations
@@ -40,15 +41,25 @@
 ; and there's the down move too
 ; (36 40 -1 9/2)
 (define-memoized 
-  (get-possible-combinations gear include-down?) 
-  (let ((admissable-combinations (map (lambda (combination)
-                                        (if (= (first combination) gear)
-                                          combination
-                                          (list (second combination) (first combination) (third combination))))
-                                      (filter (lambda (x)
-                                                (or (= gear (car x))
-                                                    (= gear (cadr x))))
-                                              gear-combinations))))
+  (get-possible-combinations gear include-down? two-gears-on-one-axle-allowed?) 
+  (let ((admissable-combinations 
+          (if two-gears-on-one-axle-allowed?
+            (append gear-combinations
+                    (filter-map (lambda (combination) 
+                                  (if (= (first combination) (second combination))
+                                    #f
+                                    (list (second combination)
+                                          (first combination)
+                                          (third combination))))
+                                gear-combinations))
+            (map (lambda (combination)
+                   (if (= (first combination) gear)
+                     combination
+                     (list (second combination) (first combination) (third combination))))
+                 (filter (lambda (x)
+                           (or (= gear (car x))
+                               (= gear (cadr x))))
+                         gear-combinations)))))
     ; this gives a list of possibilities, each possibility being a list
     (define (expand-possibilities combination)
       (let ((positive-possibilities (map (lambda (up-and-across)
@@ -94,12 +105,16 @@
        (get-total-distance (cdr list-of-objectives)))))
 
 ; an objective looks like '(up across ratio) 
+; an objective can also look like this '(up across) if we don't care about what the ratio is
+; can we put multiple gears on one axle?
 ; this checks to make sure we're getting closer to our objective
-(define (solve-gear-ratio list-of-objectives include-down?)
+(define (solve-gear-ratio list-of-objectives include-down? two-gears-on-one-axle-allowed?)
   (define (get-solutions list-of-objectives-left previous-gear) 
     (let ((up-left (caar list-of-objectives-left))
           (across-left (cadar list-of-objectives-left))
-          (ratio-left (caddar list-of-objectives-left)))
+          (ratio-left (if (= 3 (length (car list-of-objectives-left)))
+                        (caddar list-of-objectives-left)
+                        '())))  ; if the objective doesn't have a ratio, we don't have to calculate ratio-left
       (let ((solutions
               (apply append
                      (filter-map
@@ -109,9 +124,12 @@
                            combination
                            (let ((new-list-of-objectives-left
                                    (cons
-                                     (list (- up-left (third combination))
-                                           (- across-left (fourth combination))
-                                           (- (* ratio-left (/ (first combination) (second combination)))))
+                                     (append 
+                                       (list (- up-left (third combination))
+                                             (- across-left (fourth combination)))
+                                       (if (null? ratio-left)
+                                         '()
+                                         (list (- (* ratio-left (/ (first combination) (second combination)))))))
                                      (cdr list-of-objectives-left))))
                              ; this is the part that makes sure we're getting closer
                              ; to our objective
@@ -120,17 +138,20 @@
                                     (get-total-distance list-of-objectives-left))
                                (iter new-list-of-objectives-left (second combination))
                                #f))))
-                       (get-possible-combinations previous-gear include-down?)))))
+                       (get-possible-combinations previous-gear include-down? two-gears-on-one-axle-allowed?)))))
         (if (= 0 (length solutions))
           #f
           solutions))))
   (define-memoized (iter list-of-objectives-left previous-gear)
                    (let ((up-left (caar list-of-objectives-left))
                          (across-left (cadar list-of-objectives-left))
-                         (ratio-left (caddar list-of-objectives-left)))
+                         (ratio-left (if (= 3 (length (car list-of-objectives-left)))
+                                       (caddar list-of-objectives-left)
+                                       '())))
                      (cond ((< across-left 0) #f)
                            ((= across-left 0)
-                            (if (and (= up-left 0) (= ratio-left 1))
+                            (if (or (and (= 3 (length (car list-of-objectives-left))) (= up-left 0) (= ratio-left 1))
+                                    (and (= 2 (length (car list-of-objectives-left))) (= up-left 0)))
                               (if (= 1 (length list-of-objectives-left))
                                 '()
                                 (get-solutions (cdr list-of-objectives-left) previous-gear)) 
@@ -141,15 +162,39 @@
          (filter-map
            (lambda (starting-gear)
              (iter list-of-objectives starting-gear))
-           gear-sizes)))
+           (if two-gears-on-one-axle-allowed?
+             '(0)   ; if two-gears-on-one-axle-allowed? is true, then don't don't have to go through each starting gear
+             gear-sizes))))
 
 (define (get-shortest-solutions solutions)
   (if (= 0 (length solutions))
     '()
+    ; x is the new guy, y is the length of the current champion
     (let ((shortest-length (foldr (lambda (x y) (if (< (length x) y) (length x) y))
                                   (length (car solutions))
                                   solutions)))
       (filter (lambda (x) (= shortest-length (length x))) solutions))))
+
+(define (ratio-of-solution solution)
+  (if (null? solution)
+    1
+    (- (* (/ (cadar solution) (caar solution))
+          (ratio-of-solution (cdr solution))))))
+
+; if big-ratio is true, that means we want a lot torque,
+; if big-ratio is false, that means we want a lot of speed
+(define (get-solutions-with-best-ratio solutions negative-ratio? big-ratio?)
+  ; let's convert all ratios into big positives
+  (define (converter ratio)
+    (let ((negatized (if negative-ratio? (- ratio) ratio)))
+      (if big-ratio? negatized (/ 1 negatized))))
+  (let ((best-ratio (foldr (lambda (x y) (if (> (converter (ratio-of-solution x)) y)
+                                           (converter (ratio-of-solution x))
+                                           y))
+                           -10000000
+                           solutions)))
+    (filter (lambda (x) (= best-ratio (converter (ratio-of-solution x)))) solutions)))
+
 
 (define (is-element-in-list? element lst)
   (cond ((null? lst) #f)
@@ -175,7 +220,7 @@
 ; 3. shortest solutions using '(40 36 24 20 16 12 8)
 ; best does not include down movements
 (define (get-best-solutions list-of-objectives)
-  (let ((solutions (solve-gear-ratio list-of-objectives #f)))
+  (let ((solutions (solve-gear-ratio list-of-objectives #f #f)))
     (let ((awesome-solutions (get-shortest-solutions 
                                (get-solutions-with-preferred-gears
                                  solutions '(24 20 16 12))))

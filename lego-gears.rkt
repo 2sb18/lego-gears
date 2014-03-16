@@ -26,8 +26,6 @@
 ; future improvement: have a procedure that removes self-intersections
 ; future improvement: make the limit either horizontal or vertical
 
-; put a limit how number of negative combinations
-
 ; first let's just try to solve going from one gear type to another
 ;
 ; our next gear can go either up or down, but the across always has to be positive
@@ -104,44 +102,46 @@
                 (expt (* across-unit-in-mm (cadar list-of-objectives)) 2)))
        (get-total-distance (cdr list-of-objectives)))))
 
+
+(define (remove-combination-from-list-of-objectives combination list-of-objectives)
+  (let ((ratio-left (if (= 3 (length (car list-of-objectives)))
+                      (caddar list-of-objectives)
+                      '())))
+    (cons
+      (append 
+        (list (- (caar list-of-objectives) (third combination))
+              (- (cadar list-of-objectives) (fourth combination)))
+        (if (null? ratio-left)
+          '()
+          (list (- (* ratio-left (/ (first combination) (second combination)))))))
+      (cdr list-of-objectives))))
+
 ; an objective looks like '(up across ratio) 
 ; an objective can also look like this '(up across) if we don't care about what the ratio is
 ; can we put multiple gears on one axle?
 ; this checks to make sure we're getting closer to our objective
 (define (solve-gear-ratio list-of-objectives include-down? two-gears-on-one-axle-allowed?)
   (define (get-solutions list-of-objectives-left previous-gear) 
-    (let ((up-left (caar list-of-objectives-left))
-          (across-left (cadar list-of-objectives-left))
-          (ratio-left (if (= 3 (length (car list-of-objectives-left)))
-                        (caddar list-of-objectives-left)
-                        '())))  ; if the objective doesn't have a ratio, we don't have to calculate ratio-left
-      (let ((solutions
-              (apply append
-                     (filter-map
-                       (lambda (combination)
-                         ; this gives back a list of solutions
-                         (combine-head-and-tails 
-                           combination
-                           (let ((new-list-of-objectives-left
-                                   (cons
-                                     (append 
-                                       (list (- up-left (third combination))
-                                             (- across-left (fourth combination)))
-                                       (if (null? ratio-left)
-                                         '()
-                                         (list (- (* ratio-left (/ (first combination) (second combination)))))))
-                                     (cdr list-of-objectives-left))))
-                             ; this is the part that makes sure we're getting closer
-                             ; to our objective
-                             ; we have to get at least 1mm closer to our goal
-                             (if (< (+ 1 (get-total-distance new-list-of-objectives-left))
-                                    (get-total-distance list-of-objectives-left))
-                               (iter new-list-of-objectives-left (second combination))
-                               #f))))
-                       (get-possible-combinations previous-gear include-down? two-gears-on-one-axle-allowed?)))))
-        (if (= 0 (length solutions))
-          #f
-          solutions))))
+    (let ((solutions
+            (apply append
+                   (filter-map
+                     (lambda (combination)
+                       ; this gives back a list of solutions
+                       (combine-head-and-tails 
+                         combination
+                         (let ((new-list-of-objectives-left (remove-combination-from-list-of-objectives
+                                                              combination list-of-objectives-left)))
+                           ; this is the part that makes sure we're getting closer
+                           ; to our objective
+                           ; we have to get at least 1mm closer to our goal
+                           (if (< (+ 1 (get-total-distance new-list-of-objectives-left))
+                                  (get-total-distance list-of-objectives-left))
+                             (iter new-list-of-objectives-left (second combination))
+                             #f))))
+                     (get-possible-combinations previous-gear include-down? two-gears-on-one-axle-allowed?)))))
+      (if (= 0 (length solutions))
+        #f
+        solutions)))
   (define-memoized (iter list-of-objectives-left previous-gear)
                    (let ((up-left (caar list-of-objectives-left))
                          (across-left (cadar list-of-objectives-left))

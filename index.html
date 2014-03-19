@@ -1,0 +1,45 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <title>lego-gears: helping you find gear trains the easy way</title>
+  <script src="web/jquery-2.1.0.min.js"></script>
+  <script src="web/underscore.js"></script>
+
+</head>
+
+<body>
+  <p>
+    <input type="text" id="objectives" size="50" />
+    <input type="submit" id="submit" value="submit objectives" />
+    <span id="status_message">Ready.</span>
+  </p>
+
+  <p id="solution"></p>
+
+  <script>
+    var worker = new Worker('web/worker.js');
+    worker.onmessage = function(event) {
+      $("#status_message").text("Ready.");
+      var list_of_solutions = event.data;
+      var html_solutions = "";
+
+      _.each(list_of_solutions,
+        function(solution) {
+          html_solutions = html_solutions +
+            JSON.stringify(solution) + "<br />";
+        });
+
+      $("#solution").html(html_solutions);
+    };
+
+    $("#submit").click(
+      function() {
+        $("#status_message").text("computing...");
+        worker.postMessage(JSON.parse($("#objectives").val()));
+      });
+  </script>
+</body>
+
+</html>
+

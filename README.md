@@ -18,7 +18,7 @@ From your shell, move to the lego-gears directory.
 Open up a Racket xrepl session:
 
 ```shell
-steve@grizzles:~/Dropbox/Personal/programming/scheme/lego-gears$ racket -il xrepl
+steve@grizzles:~/Dropbox/Personal/programming/scheme/lego-gears/racket$ racket -il xrepl
 Welcome to Racket v5.2.1.
 ->
 ```

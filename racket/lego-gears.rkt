@@ -102,8 +102,7 @@
                 (expt (* across-unit-in-mm (cadar list-of-objectives)) 2)))
        (get-total-distance (cdr list-of-objectives)))))
 
-
-(define (remove-combination-from-list-of-objectives combination list-of-objectives)
+(define (subtract-combo-from-list-of-objectives combination list-of-objectives)
   (let ((ratio-left (if (= 3 (length (car list-of-objectives)))
                       (caddar list-of-objectives)
                       '())))
@@ -129,7 +128,7 @@
                        ; this gives back a list of solutions
                        (combine-head-and-tails 
                          combination
-                         (let ((new-list-of-objectives-left (remove-combination-from-list-of-objectives
+                         (let ((new-list-of-objectives-left (subtract-combo-from-list-of-objectives
                                                               combination list-of-objectives-left)))
                            ; this is the part that makes sure we're getting closer
                            ; to our objective
@@ -142,6 +141,7 @@
       (if (= 0 (length solutions))
         #f
         solutions)))
+  ; returns a list of solutions 
   (define-memoized (iter list-of-objectives-left previous-gear)
                    (let ((up-left (caar list-of-objectives-left))
                          (across-left (cadar list-of-objectives-left))
@@ -163,7 +163,7 @@
            (lambda (starting-gear)
              (iter list-of-objectives starting-gear))
            (if two-gears-on-one-axle-allowed?
-             '(0)   ; if two-gears-on-one-axle-allowed? is true, then don't don't have to go through each starting gear
+             '(0)   ; if two-gears-on-one-axle-allowed? is true, then we don't have to go through each starting gear
              gear-sizes))))
 
 (define (get-shortest-solutions solutions)

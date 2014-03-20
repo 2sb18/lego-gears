@@ -5,6 +5,9 @@
   <title>lego-gears: helping you find gear trains the easy way</title>
   <script src="web/jquery-2.1.0.min.js"></script>
   <script src="web/underscore.js"></script>
+  <script src="web/raphael-min.js"></script>
+  <script src="web/LegoCanvas.js"></script>
+
 
 </head>
 
@@ -15,29 +18,61 @@
     <span id="status_message">Ready.</span>
   </p>
 
-  <p id="solution"></p>
+  <!-- <p id="advanced"> -->
+  <!--   ADVANCED (takes way longer to calculate!!!) -->
+  <!--   <br /> -->
+  <!--   <input type="checkbox" id="allow_two_gears_on_same_axle" />Allow Two Gears On Same Axle -->
+  <!--   <br /> -->
+  <!--   <input type="checkbox" id="negative_movements_allowed" />Negative Movements Allowed -->
+  <!-- </p> -->
+
+  <!-- <hr /> -->
+
+  <!-- <p id="filters"> -->
+  <!--   FILTERS -->
+  <!--   <br /> -->
+  <!--   <input type="checkbox" id="allow_big_gears" />Allow 36 and 40 tooth gears -->
+  <!--   <br /> -->
+  <!--   <input type="checkbox" id="shortest_trains_only" />Shortest trains only -->
+  <!--   <br /> -->
+  <!-- </p> -->
+
+  <hr />
+
+  <div id="canvas_container" style="float:left"></div>
+
+  <p id="solutions" style="float:left, padding:10px"></p>
 
   <script>
+    var lego_canvas = LegoCanvas(document.getElementById("canvas_container"));
+
+    var list_of_solutions;
+
     var worker = new Worker('web/worker.js');
     worker.onmessage = function(event) {
-      $("#status_message").text("Ready.");
-      var list_of_solutions = event.data;
-      var html_solutions = "";
+      $("#status_message").text("Ready. ");
+      list_of_solutions = event.data;
+      var html_solutions = " ";
 
       _.each(list_of_solutions,
         function(solution) {
-          html_solutions = html_solutions +
-            JSON.stringify(solution) + "<br />";
+          html_solutions += "<input class=\"solution\" type=\"radio\" name=\"gear_train\" " +
+            "value=\"" + JSON.stringify(solution) + "\">" +
+            JSON.stringify(solution) + "</input><br />";
         });
-
-      $("#solution").html(html_solutions);
-    };
-
-    $("#submit").click(
-      function() {
-        $("#status_message").text("computing...");
-        worker.postMessage(JSON.parse($("#objectives").val()));
+      $("#solutions").html(html_solutions);
+      $(".solution").click(function() {
+        lego_canvas("create_gear_train")(JSON.parse($(".solution:checked").val()));
       });
+    };
+    $("#submit").click(function() {
+      $("#status_message").text("computing...");
+      try {
+        worker.postMessage(JSON.parse($("#objectives").val()));
+      } catch (err) {
+        $("#status_message").text("Error.");
+      }
+    });
   </script>
 </body>
 

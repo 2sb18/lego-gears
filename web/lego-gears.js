@@ -239,5 +239,8 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
   // flatten the array of arrays of solutions into an array of solutions
   gear_trains = _.flatten(gear_trains, true);
 
+  // sort by shortest gear train first
+  gear_trains = _.sortBy(gear_trains, "length");
+  // _.sortBy([1, 2, 3, 4, 5, 6], function(num){ return Math.sin(num); });
   return gear_trains;
 }

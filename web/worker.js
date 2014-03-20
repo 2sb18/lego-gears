@@ -7,6 +7,10 @@ self.addEventListener("message", function(e) {
   importScripts("gear-ratios.js");
   importScripts("lego-gears.js");
   // the message is accessible in e.data
- 
-  self.postMessage(get_all_gear_trains(e.data));
+
+  try {
+    self.postMessage(get_all_gear_trains(e.data));
+  } catch (err) {
+    self.postMessage(err);
+  }
 }, false);

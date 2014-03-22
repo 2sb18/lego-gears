@@ -54,6 +54,8 @@ function deeply_unique(array_of_arrays) {
   return array_to_return;
 }
 
+
+
 var all_gear_combinations = (function(gear_combinations) {
   "use strict";
   var first_quadrant = _.flatten(_.map(gear_combinations,
@@ -220,6 +222,25 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
   negative_movements_allowed = negative_movements_allowed ? true : false;
   two_gears_on_one_axle_allowed = two_gears_on_one_axle_allowed ? true : false;
 
+  // make sure the objectives all have the same structure.
+  // most importantly, that the ratios are Fractions
+  var objectives = _.map(list_of_objectives,
+    function(objective) {
+      var clean_objective = [];
+      clean_objective.push(objective[0]);
+      clean_objective.push(objective[1]);
+      // if the ratio exists, turn it into a Fraction
+      if (typeof objective[2] !== "undefined") {
+        if (objective[2].constructor.name === "Fraction") {
+          clean_objective.push(objective[2]);
+        } else {
+          clean_objective.push(new Fraction(objective[2]));
+        }
+      }
+      return clean_objective;
+    });
+
+
   var starting_gears;
   if (two_gears_on_one_axle_allowed === true) {
     starting_gears = [0];
@@ -229,7 +250,7 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
 
   var gear_trains = _.map(starting_gears,
     function(starting_gear) {
-      return get_gear_trains(list_of_objectives, starting_gear, negative_movements_allowed, two_gears_on_one_axle_allowed);
+      return get_gear_trains(objectives, starting_gear, negative_movements_allowed, two_gears_on_one_axle_allowed);
     });
 
   gear_trains = _.filter(gear_trains, function(gear_train) {

@@ -15,17 +15,17 @@
 <body>
   <p>
     <input type="text" id="objectives" size="50" />
-    <input type="submit" id="submit" value="submit objectives" />
+    <input type="submit" id="submit" value="find gear trains" />
     <span id="status_message">Ready.</span>
   </p>
 
-  <!-- <p id="advanced"> -->
-  <!--   ADVANCED (takes way longer to calculate!!!) -->
-  <!--   <br /> -->
-  <!--   <input type="checkbox" id="allow_two_gears_on_same_axle" />Allow Two Gears On Same Axle -->
-  <!--   <br /> -->
-  <!--   <input type="checkbox" id="negative_movements_allowed" />Negative Movements Allowed -->
-  <!-- </p> -->
+  <p id="advanced">
+    ADVANCED (takes way longer to calculate!!!)
+    <br />
+    <input type="checkbox" id="allow_two_gears_on_same_axle" />Allow Two Gears On Same Axle
+    <br />
+    <input type="checkbox" id="negative_movements_allowed" />Negative Movements Allowed
+  </p>
 
   <!-- <hr /> -->
 
@@ -50,10 +50,13 @@
     var list_of_solutions;
 
     var worker = new Worker('web/worker.js');
+    worker.onerror = function(event) {
+      throw new Error(event.message + " (" + event.filename + ":" + event.lineno + ")");
+    };
     worker.onmessage = function(event) {
-      $("#status_message").text("Ready. ");
+      $("#status_message").text("Ready.");
       list_of_solutions = event.data;
-      var html_solutions = " ";
+      var html_solutions = "";
 
       _.each(list_of_solutions,
         function(solution) {
@@ -67,11 +70,16 @@
       });
     };
     $("#submit").click(function() {
-      $("#status_message").text("computing...");
       try {
-        worker.postMessage(JSON.parse($("#objectives").val()));
+        $("#status_message").text("computing...");
+        var message = {
+          objectives: JSON.parse($("#objectives").val()),
+          allow_two_gears_on_same_axle: $("#allow_two_gears_on_same_axle").prop('checked'),
+          negative_movements_allowed: $("#negative_movements_allowed").prop('checked')
+        }
+        worker.postMessage(message);
       } catch (err) {
-        $("#status_message").text("Error.");
+        $("#status_message").text("Error: " + err.message);
       }
     });
   </script>

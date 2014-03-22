@@ -7,8 +7,10 @@
 
 "use strict";
 
+// tests like deepEqual are deepEqual(actual,expected,message)
+
 test("hash_code", function() {
-  equal(hash_code("meow"), 3347840, "yo");
+  equal(hash_code("meow"), 3347840, "properly calculates hash");
 });
 
 test("deeply_unique", function() {
@@ -111,47 +113,78 @@ test("subtract_combo_from_list_of_objectives",
 
 test("get_gear_trains", function() {
 
-  deepEqual([], get_gear_trains([
+  deepEqual(get_gear_trains([
       [0, 0]
-    ], 40),
+    ], 40), [],
     "if there is one last remaining objective, and up_left and across_left are zero and the ratio objective is missing, return an empty array.");
 
-  deepEqual([], get_gear_trains([
+  deepEqual(get_gear_trains([
       [0, 0, 1]
-    ], 40),
+    ], 40), [],
     "if there is one objective left, and ratio_left is 1, and up_left and across_left are 0, return an empty array.");
 
-  deepEqual(false, get_gear_trains([
+  deepEqual(get_gear_trains([
       [0, 0, 3]
-    ], 40),
+    ], 40), false,
     "if up_left and across_left are 0, but ratio_left is defined but not 1, return false.");
 
 
 });
 
 test("get_all_gear_trains", function() {
-  deepEqual([
+  deepEqual(get_all_gear_trains([
+      [0, 2, -1]
+    ]), [
       [
         [8, 8, 0, 2]
       ]
-    ], get_all_gear_trains([
-      [0, 2, -1]
-    ]),
+    ],
     "the only solution for moving over two units is two 8 gears");
 
-  deepEqual([
+  deepEqual(get_all_gear_trains([
+      [0, 6, 1],
+      [0, 4, -1]
+    ], false, false), [
       [
         [16, 8, 0, 3],
         [8, 16, 0, 3],
         [16, 16, 0, 4]
       ]
     ],
-    get_all_gear_trains([
-      [0, 6, 1],
-      [0, 4, -1]
-    ]),
     "can handle multiple objectives.");
 
-
+  deepEqual(get_all_gear_trains([
+      [2, 4, new Fraction(12, 8)]
+    ], false, true), [
+      [
+        [
+          8,
+          8,
+          0,
+          2
+        ],
+        [
+          8,
+          12,
+          2,
+          2
+        ]
+      ],
+      [
+        [
+          8,
+          12,
+          2,
+          2
+        ],
+        [
+          8,
+          8,
+          0,
+          2
+        ]
+      ]
+    ],
+    "can put two gears on one axle.");
 
 });

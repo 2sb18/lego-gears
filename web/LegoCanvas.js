@@ -14,11 +14,13 @@ var LegoCanvas = function(element_to_attach_to) {
   var height = 500;
   var x_origin = 50;
   var y_origin = 300;
-  var scale = 3;
+  // var x_origin = 0;
+  // var y_origin = 0;
+  var scale = 10;
   var up_unit_in_pixels = -3.2 * scale;
   var across_unit_in_pixels = 4.0 * scale;
-  var gear_radius = [];
   var crosshair_length = 4 * scale;
+  var gear_radius = [];
   gear_radius[8] = 4.825 * scale;
   gear_radius[12] = 6.73 * scale;
   gear_radius[16] = 8.9 * scale;
@@ -26,6 +28,15 @@ var LegoCanvas = function(element_to_attach_to) {
   gear_radius[24] = 12.9 * scale;
   gear_radius[36] = 19 * scale; // wasn't measured well
   gear_radius[40] = 21 * scale; // wasn't measured well
+  var gear_points = [];
+  // x,y order, starting at angle 0
+  gear_points[8] = [
+    [4.85, 0],
+    [4.85, 0.316],
+    [3.84, 0.630],
+    [2.90, 0.568]
+  ];
+
   var paper = new Raphael(element_to_attach_to, width, height);
   paper.canvas.style.backgroundColor = '#E0E0E0';
 
@@ -59,19 +70,61 @@ var LegoCanvas = function(element_to_attach_to) {
     return x_origin + across * across_unit_in_pixels;
   }
 
+  var spin = Raphael.animation({
+    transform: "r-360"
+  }, 2500).repeat(Infinity);
+
   function create_gear(size, up, across) {
-    var path = paper.path([
+    var path_array = [
       ['M', across_to_pixel(across) - crosshair_length / 2, up_to_pixel(up)],
       ['l', crosshair_length, 0],
       ['M', across_to_pixel(across), up_to_pixel(up) - crosshair_length / 2],
       ['l', 0, crosshair_length]
+    ];
+    path_array.push(['M',
+      across_to_pixel(across) + scale * gear_points[size][0][0],
+      up_to_pixel(up) + scale * gear_points[size][0][1]
     ]);
-    var circle = paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
 
-    var gear = paper.set();
-    gear.push(path, circle);
+    var a2, b2;
+    var a1 = 1,
+      b1 = 0;
 
-    gears.push(gear);
+    for (var i = 0; i < size; i++) {
+      for (var j = 0; j < 4; j++) {
+        a2 = gear_points[size][j][0];
+        b2 = gear_points[size][j][1];
+        path_array.push(['L',
+          // rotation is complex number multiplication
+          // c1 is the number to rotate by: cos ( 2 * Math.PI * i / 8 ) + i sin ( 2 * Math.PI * i / 8)
+          // c2 is the number being rotated: gear_points[size][j][0] + i * gear_points[size][j][1]
+          // c1 * c2 = (a1*a2) - b1*b2 + i (a1*b2 + a2*b1)
+          across_to_pixel(across) + scale * (a1 * a2 - b1 * b2),
+          // negative cause canvas goes positive as it goes down
+          up_to_pixel(up) - scale * (a1 * b2 + a2 * b1)
+        ]);
+      }
+      a1 = Math.cos(2 * Math.PI * (i + 1) / 8);
+      b1 = Math.sin(2 * Math.PI * (i + 1) / 8);
+
+      for (j = 3; j >= 0; j--) {
+        // for these guys, we just have to negate the b2 values
+        a2 = gear_points[size][j][0];
+        b2 = -gear_points[size][j][1];
+        path_array.push(['L',
+          across_to_pixel(across) + scale * (a1 * a2 - b1 * b2),
+          // negative cause canvas goes positive as it goes down
+          up_to_pixel(up) - scale * (a1 * b2 + a2 * b1)
+        ]);
+      }
+    }
+    // return back to the start
+    path_array.push(['L',
+      across_to_pixel(across) + scale * gear_points[size][0][0],
+      up_to_pixel(up) + scale * gear_points[size][0][1]
+    ]);
+
+    return paper.path(path_array);
   }
 
   function clear_gears() {
@@ -94,14 +147,24 @@ var LegoCanvas = function(element_to_attach_to) {
     // first we'll clear the canvas
     clear_gears();
 
+    // we need to use circles for the gears that we don't have
+    // gear points yet for
+    function temp_create_gear(size, up, across) {
+      if (size === 8) {
+        return create_gear(size, up, across);
+      } else {
+        return paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
+      }
+    }
+
     _.each(gear_train,
       function(combo) {
         if (last_gear !== combo[0]) {
-          create_gear(combo[0], up, across);
+          gears.push(temp_create_gear(combo[0], up, across));
         }
         up += combo[2];
         across += combo[3];
-        create_gear(combo[1], up, across);
+        temp_create_gear(combo[1], up, across);
         last_gear = combo[1];
       });
   }

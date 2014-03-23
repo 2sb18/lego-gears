@@ -14,12 +14,10 @@ var LegoCanvas = function(element_to_attach_to) {
   var height = 500;
   var x_origin = 50;
   var y_origin = 300;
-  // var x_origin = 0;
-  // var y_origin = 0;
-  var scale = 10;
+  var scale = 5;
   var up_unit_in_pixels = -3.2 * scale;
   var across_unit_in_pixels = 4.0 * scale;
-  var crosshair_length = 4 * scale;
+  var crosshair_length = 5 * scale;
   var gear_radius = [];
   gear_radius[8] = 4.825 * scale;
   gear_radius[12] = 6.73 * scale;
@@ -31,10 +29,38 @@ var LegoCanvas = function(element_to_attach_to) {
   var gear_points = [];
   // x,y order, starting at angle 0
   gear_points[8] = [
-    [4.85, 0],
-    [4.85, 0.316],
+    [4.825, 0],
+    [4.825, 0.316],
     [3.84, 0.630],
     [2.90, 0.568]
+  ];
+
+  gear_points[12] = [
+    [6.73, 0],
+    [6.73, 0.497717042],
+    [5.824038, 0.82231511],
+    [4.4003846, 0.5626366]
+  ];
+
+  gear_points[16] = [
+    [8.9, 0],
+    [8.9, 0.45641],
+    [7.987, 0.79871],
+    [6.846, 0.91282]
+  ];
+
+  gear_points[20] = [
+    [10.67, 0],
+    [10.67, 0.43211838],
+    [9.67590062, 0.764517134],
+    [8.2841615, 0.56507788]
+  ];
+
+  gear_points[24] = [
+    [12.9, 0],
+    [12.9, 0.4777777],
+    [12.034756, 0.637037037],
+    [10.854878, 0.7166666]
   ];
 
   var paper = new Raphael(element_to_attach_to, width, height);
@@ -104,8 +130,8 @@ var LegoCanvas = function(element_to_attach_to) {
           up_to_pixel(up) - scale * (a1 * b2 + a2 * b1)
         ]);
       }
-      a1 = Math.cos(2 * Math.PI * (i + 1) / 8);
-      b1 = Math.sin(2 * Math.PI * (i + 1) / 8);
+      a1 = Math.cos(2 * Math.PI * (i + 1) / size);
+      b1 = Math.sin(2 * Math.PI * (i + 1) / size);
 
       for (j = 3; j >= 0; j--) {
         // for these guys, we just have to negate the b2 values
@@ -127,12 +153,40 @@ var LegoCanvas = function(element_to_attach_to) {
     return paper.path(path_array);
   }
 
-  function clear_gears() {
+  function clear_gear_train() {
     _.each(gears,
       function(gear) {
         gear.remove();
       });
     gears = [];
+  }
+
+  // we need to use circles for the gears that we don't have
+  // gear points yet for
+  function temp_create_gear(size, up, across) {
+    if (size !== 36 && size !== 40) {
+      return create_gear(size, up, across);
+    } else {
+      return paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
+    }
+  }
+
+  // this is counterclockwise rotation
+  function find_rotation(previous_gear_size, previous_gear_rotation,
+    current_gear_size, up, across) {
+    var up_across_angle = Math.atan((up * -up_unit_in_pixels) /
+      (across * across_unit_in_pixels)) * 180 / Math.PI;
+    // pretend gears are beside each other, and line up tooth with
+    // anti-tooth
+    var tooth_alignment = 180 / current_gear_size;
+    // next we want to rotate the second gear 
+    var movement_rotation = up_across_angle * (previous_gear_size / current_gear_size + 1);
+    // lastly we want to rotate our second gear by the first gear,
+    // scaled by the ratio between them
+    var scaling_rotation = -previous_gear_rotation * previous_gear_size / current_gear_size;
+    // return tooth_alignment + movement_rotation + scaling_rotation;
+    return tooth_alignment + movement_rotation + scaling_rotation;
+    // return movement_rotation;
   }
 
 
@@ -142,30 +196,35 @@ var LegoCanvas = function(element_to_attach_to) {
     // start at origin
     var up = 0;
     var across = 0;
-    var last_gear = 0;
+    var previous_gear_size = 0;
+    var previous_gear_rotation = 0;
+    var gear;
 
-    // first we'll clear the canvas
-    clear_gears();
+    clear_gear_train();
 
-    // we need to use circles for the gears that we don't have
-    // gear points yet for
-    function temp_create_gear(size, up, across) {
-      if (size === 8) {
-        return create_gear(size, up, across);
+    function rotate(gear, angle) {
+      if (angle >= 0) {
+        gear.transform("r-" + angle);
       } else {
-        return paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
+        gear.transform("r" + -angle);
       }
     }
 
     _.each(gear_train,
       function(combo) {
-        if (last_gear !== combo[0]) {
-          gears.push(temp_create_gear(combo[0], up, across));
+        if (previous_gear_size !== combo[0]) {
+          gear = temp_create_gear(combo[0], up, across);
+          rotate(gear, previous_gear_rotation);
+          gears.push(gear);
         }
         up += combo[2];
         across += combo[3];
-        temp_create_gear(combo[1], up, across);
-        last_gear = combo[1];
+        gear = temp_create_gear(combo[1], up, across);
+        previous_gear_rotation = find_rotation(combo[0], previous_gear_rotation,
+          combo[1], combo[2], combo[3]);
+        rotate(gear, previous_gear_rotation);
+        gears.push(gear);
+        previous_gear_size = combo[1];
       });
   }
   //
@@ -174,6 +233,28 @@ var LegoCanvas = function(element_to_attach_to) {
     switch (method) {
       case "create_gear_train":
         return create_gear_train;
+      case "clear_gear_train":
+        return clear_gear_train;
+      case "get_gears":
+        return gears;
     }
   };
 };
+
+// helper functions
+//
+
+var thing;
+
+function create_thing(most_pos, middle, radius) {
+  "use strict";
+  thing = {
+    ratio: radius / (most_pos - middle),
+    middle: middle
+  };
+}
+
+function calculator(point) {
+  "use strict";
+  return (point - thing.middle) * thing.ratio;
+}

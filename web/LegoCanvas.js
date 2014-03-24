@@ -1,4 +1,4 @@
-/* global Raphael, _ */
+/* global Raphael, _, Fraction */
 /* exported LegoCanvas */
 
 // up and across are in the base Lego units,
@@ -15,7 +15,7 @@ var LegoCanvas = function(element_to_attach_to) {
   var height = 500;
   var x_origin = 50;
   var y_origin = 300;
-  var scale = 10;
+  var scale = 5;
   var up_unit_in_pixels = -3.2 * scale;
   var across_unit_in_pixels = 4.0 * scale;
   var crosshair_length = 3 * scale;
@@ -204,6 +204,7 @@ var LegoCanvas = function(element_to_attach_to) {
     var across = 0;
     var previous_gear_size = 0;
     var previous_gear_rotation = 0;
+    var previous_angular_speed = new Fraction(1);
     var gear;
 
     clear_gear_train();
@@ -215,7 +216,7 @@ var LegoCanvas = function(element_to_attach_to) {
           gear = {};
           gear.raphael = temp_create_gear(combo[0], up, across, previous_gear_rotation);
           gear.angle = previous_gear_rotation;
-          // gear.speed ??
+          gear.angular_speed = new Fraction(previous_angular_speed);
           gears.push(gear);
         }
         up += combo[2];
@@ -223,12 +224,47 @@ var LegoCanvas = function(element_to_attach_to) {
         gear = {};
         previous_gear_rotation = find_rotation(combo[0], previous_gear_rotation,
           combo[1], combo[2], combo[3]);
+        previous_angular_speed.mul(-1).mul(combo[0]).div(combo[1]);
         gear.raphael = temp_create_gear(combo[1], up, across, previous_gear_rotation);
         gear.angle = previous_gear_rotation;
-        // gear.speed ??
+        gear.angular_speed = new Fraction(previous_angular_speed);
         gears.push(gear);
         previous_gear_size = combo[1];
       });
+
+    function rotate(angle) {
+      if (angle >= 0) {
+        return "R-" + angle;
+      }
+      return "R" + -angle;
+    }
+
+    var rotation_counter = 0;
+    var rotation_time = 4000;
+
+    function ani() {
+      rotation_counter++;
+      // Raphael.animation(params, ms, easing, callback);
+      var anim = Raphael.animation({
+        transform: rotate(360 * gears[0].angular_speed.n / gears[0].angular_speed.d * rotation_counter)
+      }, rotation_time, "linear", ani); // return an animation
+      var first_element = gears[0].raphael.animate(anim);
+
+      _.each(_.rest(gears),
+        function(gear) {
+          gear.raphael.animateWith(first_element,
+            anim, {
+              transform: rotate(360 * gear.angular_speed.s *
+                gear.angular_speed.n /
+                gear.angular_speed.d *
+                rotation_counter)
+            },
+            rotation_time, "linear");
+        });
+    }
+
+    ani();
+
   }
   //
   // returns a dispatch function

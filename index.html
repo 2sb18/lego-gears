@@ -27,27 +27,57 @@
     <input type="checkbox" id="negative_movements_allowed" />Negative Movements Allowed
   </p>
 
-  <!-- <hr /> -->
+  <hr />
 
-  <!-- <p id="filters"> -->
-  <!--   FILTERS -->
-  <!--   <br /> -->
-  <!--   <input type="checkbox" id="allow_big_gears" />Allow 36 and 40 tooth gears -->
-  <!--   <br /> -->
-  <!--   <input type="checkbox" id="shortest_trains_only" />Shortest trains only -->
-  <!--   <br /> -->
-  <!-- </p> -->
+  <p id="filters">
+    Gears to use:
+    <input type="checkbox" class="gears" value="8" />8
+    <input type="checkbox" class="gears" value="12" checked />12
+    <input type="checkbox" class="gears" value="16" checked />16
+    <input type="checkbox" class="gears" value="20" checked />20
+    <input type="checkbox" class="gears" value="24" checked />24
+    <input type="checkbox" class="gears" value="36" />36
+    <input type="checkbox" class="gears" value="40" />40
+  </p>
 
   <hr />
 
   <div id="canvas_container" style="float:left"></div>
 
-  <p id="solutions" style="float:left, padding:10px"></p>
+  <div id="solutions" style="float:left; padding:10px; height:500px; width: 500px; overflow:auto"></div>
 
   <script>
     var lego_canvas = LegoCanvas(document.getElementById("canvas_container"));
 
     var list_of_solutions;
+    var gears = [];
+
+    $(".gears").click(update_list_of_solutions);
+
+    function update_list_of_solutions() {
+      var html_solutions = "";
+
+      $(".gears").each(function() {
+        gears[$(this).val()] = $(this).prop('checked');
+      });
+
+      _.each(list_of_solutions,
+        function(solution) {
+          var preferred_gears = _.every(solution,
+            function(combo) {
+              return gears[combo[0]] && gears[combo[1]];
+            });
+          if (preferred_gears) {
+            html_solutions += "<input class=\"solution\" type=\"radio\" name=\"gear_train\" " +
+              "value=\"" + JSON.stringify(solution) + "\">" +
+              JSON.stringify(solution) + "</input><br />";
+          }
+        });
+      $("#solutions").html(html_solutions);
+      $(".solution").click(function() {
+        lego_canvas("create_gear_train")(JSON.parse($(".solution:checked").val()));
+      });
+    }
 
     var worker = new Worker('web/worker.js');
     worker.onerror = function(event) {
@@ -56,18 +86,7 @@
     worker.onmessage = function(event) {
       $("#status_message").text("Ready.");
       list_of_solutions = event.data;
-      var html_solutions = "";
-
-      _.each(list_of_solutions,
-        function(solution) {
-          html_solutions += "<input class=\"solution\" type=\"radio\" name=\"gear_train\" " +
-            "value=\"" + JSON.stringify(solution) + "\">" +
-            JSON.stringify(solution) + "</input><br />";
-        });
-      $("#solutions").html(html_solutions);
-      $(".solution").click(function() {
-        lego_canvas("create_gear_train")(JSON.parse($(".solution:checked").val()));
-      });
+      update_list_of_solutions();
     };
     $("#submit").click(function() {
       try {

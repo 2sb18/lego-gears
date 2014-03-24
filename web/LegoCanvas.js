@@ -1,5 +1,5 @@
 /* global Raphael, _, Fraction */
-/* exported LegoCanvas */
+/* exported LegoCanvas, create_thing, calculator */
 
 // up and across are in the base Lego units,
 // measurements in mm
@@ -62,6 +62,20 @@ var LegoCanvas = function(element_to_attach_to) {
     [12.9, 0.4777777],
     [12.034756, 0.637037037],
     [10.854878, 0.7166666]
+  ];
+
+  gear_points[36] = [
+    [19, 0],
+    [19, 0.568862275],
+    [17.9760479, 0.7964071856],
+    [16.553892215, 0.62574850299]
+  ];
+
+  gear_points[40] = [
+    [21, 0],
+    [21, 0.3125],
+    [19.6875, 0.875],
+    [18.75, 0.9375]
   ];
 
   var paper = new Raphael(element_to_attach_to, width, height);
@@ -169,16 +183,6 @@ var LegoCanvas = function(element_to_attach_to) {
     gears = [];
   }
 
-  // we need to use circles for the gears that we don't have
-  // gear points yet for
-  function temp_create_gear(size, up, across, rotation) {
-    if (size !== 36 && size !== 40) {
-      return create_gear(size, up, across, rotation);
-    } else {
-      return paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
-    }
-  }
-
   // this is counterclockwise rotation
   // this is in rads
   function find_rotation(previous_gear_size, previous_gear_rotation,
@@ -214,7 +218,7 @@ var LegoCanvas = function(element_to_attach_to) {
       function(combo) {
         if (previous_gear_size !== combo[0]) {
           gear = {};
-          gear.raphael = temp_create_gear(combo[0], up, across, previous_gear_rotation);
+          gear.raphael = create_gear(combo[0], up, across, previous_gear_rotation);
           gear.angle = previous_gear_rotation;
           gear.angular_speed = new Fraction(previous_angular_speed);
           gears.push(gear);
@@ -225,7 +229,7 @@ var LegoCanvas = function(element_to_attach_to) {
         previous_gear_rotation = find_rotation(combo[0], previous_gear_rotation,
           combo[1], combo[2], combo[3]);
         previous_angular_speed.mul(-1).mul(combo[0]).div(combo[1]);
-        gear.raphael = temp_create_gear(combo[1], up, across, previous_gear_rotation);
+        gear.raphael = create_gear(combo[1], up, across, previous_gear_rotation);
         gear.angle = previous_gear_rotation;
         gear.angular_speed = new Fraction(previous_angular_speed);
         gears.push(gear);

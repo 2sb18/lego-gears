@@ -8,13 +8,14 @@
 var LegoCanvas = function(element_to_attach_to) {
   "use strict";
 
-  var gears = [];
+  var gears; // array of objects. each object has a
+  // raphael, an angle, and a rotation speed
 
   var width = 500;
   var height = 500;
   var x_origin = 50;
   var y_origin = 300;
-  var scale = 5;
+  var scale = 10;
   var up_unit_in_pixels = -3.2 * scale;
   var across_unit_in_pixels = 4.0 * scale;
   var crosshair_length = 3 * scale;
@@ -96,58 +97,65 @@ var LegoCanvas = function(element_to_attach_to) {
     return x_origin + across * across_unit_in_pixels;
   }
 
-  var spin = Raphael.animation({
-    transform: "r-360"
-  }, 2500).repeat(Infinity);
+  // point is an [x,y] array
+  // return point is the same
+  function complex_multiplication(point1, point2) {
+    return [point1[0] * point2[0] - point1[1] * point2[1], point1[0] * point2[1] + point2[0] * point1[1]];
+  }
 
-  function create_gear(size, up, across) {
-    var path_array = [
-      ['M', across_to_pixel(across) - crosshair_length / 2, up_to_pixel(up)],
-      ['l', crosshair_length, 0],
-      ['M', across_to_pixel(across), up_to_pixel(up) - crosshair_length / 2],
-      ['l', 0, crosshair_length]
-    ];
+  // rotation is in radians
+  function create_gear(size, up, across, rotation) {
+    var rotator = [Math.cos(rotation), Math.sin(rotation)];
+    var i, j;
+    var path_array = [];
+    var temp;
+
+    // for the crosshairs, have four different paths from origin to end of line
+    for (i = 0; i < 4; i++) {
+      path_array.push(['M', across_to_pixel(across), up_to_pixel(up)]);
+      temp = complex_multiplication(rotator, [Math.cos(2 * Math.PI * i / 4), Math.sin(2 * Math.PI * i / 4)]);
+      path_array.push(['l', crosshair_length / 2 * temp[0], -crosshair_length / 2 * temp[1]]);
+    }
+
+    // spoke is what used to be a1 and b1
+    var spoke = complex_multiplication([1, 0], rotator);
+
+    temp = complex_multiplication(gear_points[size][0], spoke);
     path_array.push(['M',
-      across_to_pixel(across) + scale * gear_points[size][0][0],
-      up_to_pixel(up) + scale * gear_points[size][0][1]
+      across_to_pixel(across) + scale * temp[0],
+      up_to_pixel(up) - scale * temp[1]
     ]);
 
-    var a2, b2;
-    var a1 = 1,
-      b1 = 0;
-
-    for (var i = 0; i < size; i++) {
-      for (var j = 0; j < 4; j++) {
-        a2 = gear_points[size][j][0];
-        b2 = gear_points[size][j][1];
+    for (i = 0; i < size; i++) {
+      for (j = 0; j < 4; j++) {
+        temp = complex_multiplication(gear_points[size][j], spoke);
         path_array.push(['L',
-          // rotation is complex number multiplication
-          // c1 is the number to rotate by: cos ( 2 * Math.PI * i / 8 ) + i sin ( 2 * Math.PI * i / 8)
-          // c2 is the number being rotated: gear_points[size][j][0] + i * gear_points[size][j][1]
-          // c1 * c2 = (a1*a2) - b1*b2 + i (a1*b2 + a2*b1)
-          across_to_pixel(across) + scale * (a1 * a2 - b1 * b2),
-          // negative cause canvas goes positive as it goes down
-          up_to_pixel(up) - scale * (a1 * b2 + a2 * b1)
+          across_to_pixel(across) + scale * temp[0],
+          up_to_pixel(up) - scale * temp[1]
         ]);
       }
-      a1 = Math.cos(2 * Math.PI * (i + 1) / size);
-      b1 = Math.sin(2 * Math.PI * (i + 1) / size);
+
+      spoke = complex_multiplication(
+        [Math.cos(2 * Math.PI * (i + 1) / size), Math.sin(2 * Math.PI * (i + 1) / size)],
+        rotator);
 
       for (j = 3; j >= 0; j--) {
         // for these guys, we just have to negate the b2 values
-        a2 = gear_points[size][j][0];
-        b2 = -gear_points[size][j][1];
+        temp = complex_multiplication([gear_points[size][j][0], -gear_points[size][j][1]],
+          spoke);
         path_array.push(['L',
-          across_to_pixel(across) + scale * (a1 * a2 - b1 * b2),
+          across_to_pixel(across) + scale * temp[0],
           // negative cause canvas goes positive as it goes down
-          up_to_pixel(up) - scale * (a1 * b2 + a2 * b1)
+          up_to_pixel(up) - scale * temp[1]
         ]);
       }
     }
+
     // return back to the start
+    temp = complex_multiplication(gear_points[size][0], rotator);
     path_array.push(['L',
-      across_to_pixel(across) + scale * gear_points[size][0][0],
-      up_to_pixel(up) + scale * gear_points[size][0][1]
+      across_to_pixel(across) + scale * temp[0],
+      up_to_pixel(up) - scale * temp[1]
     ]);
 
     return paper.path(path_array);
@@ -156,39 +164,37 @@ var LegoCanvas = function(element_to_attach_to) {
   function clear_gear_train() {
     _.each(gears,
       function(gear) {
-        gear.remove();
+        gear.raphael.remove();
       });
     gears = [];
   }
 
   // we need to use circles for the gears that we don't have
   // gear points yet for
-  function temp_create_gear(size, up, across) {
+  function temp_create_gear(size, up, across, rotation) {
     if (size !== 36 && size !== 40) {
-      return create_gear(size, up, across);
+      return create_gear(size, up, across, rotation);
     } else {
       return paper.circle(across_to_pixel(across), up_to_pixel(up), gear_radius[size]);
     }
   }
 
   // this is counterclockwise rotation
+  // this is in rads
   function find_rotation(previous_gear_size, previous_gear_rotation,
     current_gear_size, up, across) {
     var up_across_angle = Math.atan((up * -up_unit_in_pixels) /
-      (across * across_unit_in_pixels)) * 180 / Math.PI;
+      (across * across_unit_in_pixels));
     // pretend gears are beside each other, and line up tooth with
     // anti-tooth
-    var tooth_alignment = 180 / current_gear_size;
+    var tooth_alignment = Math.PI / current_gear_size;
     // next we want to rotate the second gear 
     var movement_rotation = up_across_angle * (previous_gear_size / current_gear_size + 1);
     // lastly we want to rotate our second gear by the first gear,
     // scaled by the ratio between them
     var scaling_rotation = -previous_gear_rotation * previous_gear_size / current_gear_size;
-    // return tooth_alignment + movement_rotation + scaling_rotation;
     return tooth_alignment + movement_rotation + scaling_rotation;
-    // return movement_rotation;
   }
-
 
   function create_gear_train(gear_train) {
     // gear train will be an array of combos
@@ -202,27 +208,24 @@ var LegoCanvas = function(element_to_attach_to) {
 
     clear_gear_train();
 
-    function rotate(gear, angle) {
-      if (angle >= 0) {
-        gear.transform("r-" + angle);
-      } else {
-        gear.transform("r" + -angle);
-      }
-    }
-
+    // the rotation stuff
     _.each(gear_train,
       function(combo) {
         if (previous_gear_size !== combo[0]) {
-          gear = temp_create_gear(combo[0], up, across);
-          rotate(gear, previous_gear_rotation);
+          gear = {};
+          gear.raphael = temp_create_gear(combo[0], up, across, previous_gear_rotation);
+          gear.angle = previous_gear_rotation;
+          // gear.speed ??
           gears.push(gear);
         }
         up += combo[2];
         across += combo[3];
-        gear = temp_create_gear(combo[1], up, across);
+        gear = {};
         previous_gear_rotation = find_rotation(combo[0], previous_gear_rotation,
           combo[1], combo[2], combo[3]);
-        rotate(gear, previous_gear_rotation);
+        gear.raphael = temp_create_gear(combo[1], up, across, previous_gear_rotation);
+        gear.angle = previous_gear_rotation;
+        // gear.speed ??
         gears.push(gear);
         previous_gear_size = combo[1];
       });

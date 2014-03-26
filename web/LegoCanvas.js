@@ -249,16 +249,16 @@ var LegoCanvas = function(element_to_attach_to) {
 
     var fastest_speed = _.max(gears,
       function(gear) {
-        var speed = gear.angular_speed.n / gear.angular_speed.d;
-        return speed;
-      });
+        return Math.abs(gear.angular_speed.toDouble());
+      }).angular_speed.toDouble();
+    fastest_speed = Math.abs(fastest_speed);
 
 
     function ani() {
       rotation_counter++;
       // Raphael.animation(params, ms, easing, callback);
       var anim = Raphael.animation({
-        transform: rotate(fastest_rotation_per_second * gears[0].angular_speed.n / gears[0].angular_speed.d * rotation_counter * fastest_speed.angular_speed.d / fastest_speed.angular_speed.n)
+        transform: rotate(fastest_rotation_per_second * gears[0].angular_speed.toDouble() * rotation_counter / fastest_speed)
       }, rotation_time, "linear", ani); // return an animation
       var first_element = gears[0].raphael.animate(anim);
 
@@ -266,10 +266,7 @@ var LegoCanvas = function(element_to_attach_to) {
         function(gear) {
           gear.raphael.animateWith(first_element,
             anim, {
-              transform: rotate(fastest_rotation_per_second * gear.angular_speed.s *
-                gear.angular_speed.n /
-                gear.angular_speed.d *
-                rotation_counter * fastest_speed.angular_speed.d / fastest_speed.angular_speed.n)
+              transform: rotate(fastest_rotation_per_second * gear.angular_speed.toDouble() * rotation_counter / fastest_speed)
             },
             rotation_time, "linear");
         });

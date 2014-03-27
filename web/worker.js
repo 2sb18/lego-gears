@@ -5,7 +5,7 @@ self.addEventListener("message", function(e) {
   "use strict";
   importScripts("underscore.js");
   importScripts("underscore.array.builders.js");
-  importScripts("fraction.min.js");
+  importScripts("fraction.js");
   importScripts("gear-ratios.js");
   importScripts("lego-gears.js");
   // the message is accessible in e.data

@@ -79,7 +79,7 @@ var LegoCanvas = function(element_to_attach_to) {
   ];
 
   var paper = new Raphael(element_to_attach_to, width, height);
-  paper.canvas.style.backgroundColor = '#E0E0E0';
+  paper.canvas.style.backgroundColor = 'black';
 
   draw_grid();
 
@@ -172,7 +172,9 @@ var LegoCanvas = function(element_to_attach_to) {
       up_to_pixel(up) - scale * temp[1]
     ]);
 
-    return paper.path(path_array);
+    var path = paper.path(path_array);
+    path.attr('stroke', 'white');
+    return path;
   }
 
   function clear_gear_train() {

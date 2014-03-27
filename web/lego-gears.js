@@ -34,9 +34,9 @@ function hash_code(str) {
 function deeply_contains(array_of_arrays, array_to_find) {
   "use strict";
   return _.some(array_of_arrays,
-    function(array) {
-      return _.isEqual(array_to_find, array);
-    });
+      function(array) {
+        return _.isEqual(array_to_find, array);
+      });
 }
 
 // takes an array and returns an array with duplicates removed.
@@ -46,11 +46,11 @@ function deeply_unique(array_of_arrays) {
   "use strict";
   var array_to_return = [];
   _.each(array_of_arrays,
-    function(array) {
-      if (false === deeply_contains(array_to_return, array)) {
-        array_to_return.push(array);
-      }
-    });
+      function(array) {
+        if (false === deeply_contains(array_to_return, array)) {
+          array_to_return.push(array);
+        }
+      });
   return array_to_return;
 }
 
@@ -59,20 +59,20 @@ function deeply_unique(array_of_arrays) {
 var all_gear_combinations = (function(gear_combinations) {
   "use strict";
   var first_quadrant = _.flatten(_.map(gear_combinations,
-    // compacted_combos would look like [40,36,[[up, across], [up,across]]]
-    //
-    // we'd want to return an array of gear_combos 
-    function(compacted_combos) {
-      return _.map(compacted_combos[2],
-        function(up_and_across) {
-          return [
-            compacted_combos[0],
-            compacted_combos[1],
-            up_and_across[0],
-            up_and_across[1]
+      // compacted_combos would look like [40,36,[[up, across], [up,across]]]
+      //
+      // we'd want to return an array of gear_combos 
+      function(compacted_combos) {
+        return _.map(compacted_combos[2],
+          function(up_and_across) {
+            return [
+          compacted_combos[0],
+        compacted_combos[1],
+        up_and_across[0],
+        up_and_across[1]
           ];
-        });
-    }), true);
+          });
+      }), true);
   var second_quadrant = _.map(first_quadrant,
     function(gear_combo) {
       var cloned = _.clone(gear_combo);
@@ -81,23 +81,23 @@ var all_gear_combinations = (function(gear_combinations) {
       return cloned;
     });
   var third_quadrant = _.map(first_quadrant,
-    function(gear_combo) {
-      var cloned = _.clone(gear_combo);
-      cloned[3] = gear_combo[3] === 0 ? gear_combo[3] : -gear_combo[3];
-      cloned[2] = gear_combo[2] === 0 ? gear_combo[2] : -gear_combo[2];
-      return cloned;
-    });
+      function(gear_combo) {
+        var cloned = _.clone(gear_combo);
+        cloned[3] = gear_combo[3] === 0 ? gear_combo[3] : -gear_combo[3];
+        cloned[2] = gear_combo[2] === 0 ? gear_combo[2] : -gear_combo[2];
+        return cloned;
+      });
   var fourth_quadrant = _.map(first_quadrant,
-    function(gear_combo) {
-      var cloned = _.clone(gear_combo);
-      cloned[2] = gear_combo[2] === 0 ? gear_combo[2] : -gear_combo[2];
-      return cloned;
-    });
+      function(gear_combo) {
+        var cloned = _.clone(gear_combo);
+        cloned[2] = gear_combo[2] === 0 ? gear_combo[2] : -gear_combo[2];
+        return cloned;
+      });
   var all_quadrants = _.cat(first_quadrant, second_quadrant, third_quadrant, fourth_quadrant);
   var all_quadrants_switched = _.map(all_quadrants,
-    function(gear_combo) {
-      return [gear_combo[1], gear_combo[0], gear_combo[2], gear_combo[3]];
-    });
+      function(gear_combo) {
+        return [gear_combo[1], gear_combo[0], gear_combo[2], gear_combo[3]];
+      });
   return deeply_unique(_.cat(all_quadrants, all_quadrants_switched));
 })(gear_combinations);
 
@@ -116,9 +116,9 @@ function combine_head_and_tails(head_combo, tail_trains) {
     return [[head_combo]];
   } else {
     return _.map(tail_trains,
-      function(tail_train) {
-        return _.cat([head_combo], tail_train);
-      });
+        function(tail_train) {
+          return _.cat([head_combo], tail_train);
+        });
   }
 }
 
@@ -130,7 +130,6 @@ function get_total_distance(list_of_objectives, up_unit, across_unit) {
     return 0;
   } else {
     return Math.sqrt(Math.pow(up_unit * list_of_objectives[0][0], 2) + Math.pow(across_unit * list_of_objectives[0][1], 2)) + get_total_distance(_.rest(list_of_objectives), up_unit, across_unit);
-    // return Math.pow(up_unit * list_of_objectives[0][0], 2);
   }
 }
 
@@ -141,8 +140,8 @@ function get_total_distance(list_of_objectives, up_unit, across_unit) {
 function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
   "use strict";
   var new_objective = [list_of_objectives[0][0] - combo[2],
-    list_of_objectives[0][1] - combo[3]
-  ];
+      list_of_objectives[0][1] - combo[3]
+        ];
   if (list_of_objectives[0].length === 3) {
     // use the new Fraction so that if the ratio of the objective isn't a fraction,
     // it gets turned into one
@@ -154,30 +153,30 @@ function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
 
 // returns an array of gear_trains
 var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
-    "use strict";
-    var up_left = list_of_objectives_left[0][0];
-    var across_left = list_of_objectives_left[0][1];
-    // if a ratio is not given, ratio_left is undefined, which
-    // is how we detect that a ratio wasn't given
-    var ratio_left = list_of_objectives_left[0][2];
-    if (up_left === 0 && across_left === 0) {
-      if (typeof ratio_left === "undefined" || new Fraction(1).equals(ratio_left)) {
-        if (list_of_objectives_left.length === 1) {
-          return [];
-        } else {
-          // the head objective was met, so remove it and keep going!
-          list_of_objectives_left = _.rest(list_of_objectives_left);
-        }
+  "use strict";
+  var up_left = list_of_objectives_left[0][0];
+  var across_left = list_of_objectives_left[0][1];
+  // if a ratio is not given, ratio_left is undefined, which
+  // is how we detect that a ratio wasn't given
+  var ratio_left = list_of_objectives_left[0][2];
+  if (up_left === 0 && across_left === 0) {
+    if (typeof ratio_left === "undefined" || new Fraction(1).equals(ratio_left)) {
+      if (list_of_objectives_left.length === 1) {
+        return [];
       } else {
-        // ratio objective was not met
-        return false;
+        // the head objective was met, so remove it and keep going!
+        list_of_objectives_left = _.rest(list_of_objectives_left);
       }
+    } else {
+      // ratio objective was not met
+      return false;
     }
+  }
 
-    // gear_trains is an array whos elements are either false or arrays of solutions. we're going
-    // to have to get rid of the falsey values with _.filter, and flatten the array of arrays of 
-    // solutions into an array of solutions.
-    var gear_trains = _.map(all_gear_combinations,
+  // gear_trains is an array whos elements are either false or arrays of solutions. we're going
+  // to have to get rid of the falsey values with _.filter, and flatten the array of arrays of 
+  // solutions into an array of solutions.
+  var gear_trains = _.map(all_gear_combinations,
       // each combo will return either false or a list of solutions. so we're going to want to flatten
       function(combo) {
         if (negative_movements_allowed === false && (combo[2] < 0 || combo[3] < 0)) {
@@ -193,19 +192,19 @@ var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear,
           return false;
         }
       });
-    // get rid of the falsey values
-    gear_trains = _.filter(gear_trains, function(gear_train) {
-      return gear_train;
-    });
-    // flatten the array of arrays of solutions into an array of solutions
-    gear_trains = _.flatten(gear_trains, true);
+  // get rid of the falsey values
+  gear_trains = _.filter(gear_trains, function(gear_train) {
+    return gear_train;
+  });
+  // flatten the array of arrays of solutions into an array of solutions
+  gear_trains = _.flatten(gear_trains, true);
 
-    if (gear_trains.length === 0) {
-      return false;
-    } else {
-      return gear_trains;
-    }
-  },
+  if (gear_trains.length === 0) {
+    return false;
+  } else {
+    return gear_trains;
+  }
+},
   // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
   function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
     "use strict";
@@ -225,20 +224,20 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
   // make sure the objectives all have the same structure.
   // most importantly, that the ratios are Fractions
   var objectives = _.map(list_of_objectives,
-    function(objective) {
-      var clean_objective = [];
-      clean_objective.push(objective[0]);
-      clean_objective.push(objective[1]);
-      // if the ratio exists, turn it into a Fraction
-      if (typeof objective[2] !== "undefined") {
-        if (objective[2].constructor.name === "Fraction") {
-          clean_objective.push(objective[2]);
-        } else {
-          clean_objective.push(new Fraction(objective[2]));
+      function(objective) {
+        var clean_objective = [];
+        clean_objective.push(objective[0]);
+        clean_objective.push(objective[1]);
+        // if the ratio exists, turn it into a Fraction
+        if (typeof objective[2] !== "undefined") {
+          if (objective[2].constructor.name === "Fraction") {
+            clean_objective.push(objective[2]);
+          } else {
+            clean_objective.push(new Fraction(objective[2]));
+          }
         }
-      }
-      return clean_objective;
-    });
+        return clean_objective;
+      });
 
 
   var starting_gears;
@@ -249,9 +248,9 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
   }
 
   var gear_trains = _.map(starting_gears,
-    function(starting_gear) {
-      return get_gear_trains(objectives, starting_gear, negative_movements_allowed, two_gears_on_one_axle_allowed);
-    });
+      function(starting_gear) {
+        return get_gear_trains(objectives, starting_gear, negative_movements_allowed, two_gears_on_one_axle_allowed);
+      });
 
   gear_trains = _.filter(gear_trains, function(gear_train) {
     return gear_train;

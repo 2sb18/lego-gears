@@ -12,16 +12,23 @@ self.addEventListener("message", function(e) {
 
   try {
     var objectives = e.data.objectives;
-    // turn string ratios into Fractions
+
+
+    // objectives come as strings
+    // convert to what LegoCanvas wants
     objectives = _.map(objectives,
       function(objective) {
-        if (typeof objective[2] === "string") {
-          return [objective[0], objective[1], new Fraction(objective[2].split("/"))];
+        objective[0] = +objective[0];
+        objective[1] = +objective[1];
+        if (objective[2].indexOf('/') !== -1) {
+          objective[2] = new Fraction(objective[2].split('/'));
+        } else {
+          objective[2] = +objective[2];
         }
         return objective;
       });
+
     self.postMessage(get_all_gear_trains(objectives, e.data.negative_movements_allowed, e.data.allow_two_gears_on_same_axle));
-    // self.postMessage(get_all_gear_trains(e.data));
   } catch (err) {
     self.postMessage(err);
   }

@@ -9,12 +9,31 @@
   <script src="web/raphael-min.js"></script>
   <script src="web/LegoCanvas.js"></script>
 
+  <style>
+    body {
+      background-color: black
+    }
+    p {
+      color: white
+    }
+    div {
+      color: white
+    }
+    input {
+      margin: 10px
+    }
+  </style>
+
 
 </head>
 
-<body style="background-color:gray">
+<body>
   <p>
-    <input type="text" id="objectives" size="50" />
+    Plates up:
+    <input type="text" id="input_up" />Half pins across:
+    <input type="text" id="input_across" />Gear ratio:
+    <input type="text" id="input_gear_ratio" />
+
     <input type="submit" id="submit" value="find gear trains" />
     <span id="status_message">Ready.</span>
   </p>
@@ -81,7 +100,7 @@
 
     var worker = new Worker('web/worker.js');
     worker.onerror = function(event) {
-      throw new Error(event.message + " (" + event.filename + ":" + event.lineno + ")");
+      throw event.message + " (" + event.filename + ":" + event.lineno + ")";
     };
     worker.onmessage = function(event) {
       $("#status_message").text("Ready.");
@@ -92,7 +111,9 @@
       try {
         $("#status_message").text("computing...");
         var message = {
-          objectives: JSON.parse($("#objectives").val()),
+          objectives: [
+            [$("#input_up").val(), $("#input_across").val(), $("#input_gear_ratio").val()]
+          ],
           allow_two_gears_on_same_axle: $("#allow_two_gears_on_same_axle").prop('checked'),
           negative_movements_allowed: $("#negative_movements_allowed").prop('checked')
         }
@@ -103,8 +124,10 @@
     });
 
     lego_canvas("create_gear_train")([
-      [24, 8, 5, 0],
-      [36, 12, 0, 6]
+      [24, 20, 7, 0],
+      [24, 8, 0, 4],
+      [16, 8, 1, 3],
+      [16, 12, 2, 3]
     ]);
   </script>
 

@@ -4,6 +4,15 @@
 // up and across are in the base Lego units,
 // measurements in mm
 
+var colours = [
+  'green',
+  'red',
+  'yellow',
+  'blue'
+];
+
+
+
 // creates a LegoCanvas 50 units across by 50 units up
 var LegoCanvas = function(element_to_attach_to) {
   "use strict";
@@ -173,7 +182,7 @@ var LegoCanvas = function(element_to_attach_to) {
     ]);
 
     var path = paper.path(path_array);
-    path.attr('stroke', 'white');
+    path.attr('stroke', _.sample(colours));
     return path;
   }
 

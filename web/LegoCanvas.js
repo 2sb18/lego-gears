@@ -239,7 +239,7 @@ var LegoCanvas = function(element_to_attach_to) {
         gear = {};
         previous_gear_rotation = find_rotation(combo[0], previous_gear_rotation,
           combo[1], combo[2], combo[3]);
-        previous_angular_speed.mul(-1).mul(combo[0]).div(combo[1]);
+        previous_angular_speed.mul(-1, 1).mul(combo[0], 1).div(combo[1], 1);
         gear.raphael = create_gear(combo[1], up, across, previous_gear_rotation);
         gear.angle = previous_gear_rotation;
         gear.angular_speed = new Fraction(previous_angular_speed);

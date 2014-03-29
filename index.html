@@ -80,18 +80,28 @@
         gears[$(this).val()] = $(this).prop('checked');
       });
 
-      _.each(list_of_solutions,
+      var solutions_with_preferred_gears = _.filter(list_of_solutions,
         function(solution) {
-          var preferred_gears = _.every(solution,
+          return _.every(solution,
             function(combo) {
               return gears[combo[0]] && gears[combo[1]];
             });
-          if (preferred_gears) {
+        });
+
+      if (solutions_with_preferred_gears.length !== 0) {
+        _.each(solutions_with_preferred_gears,
+          function(solution) {
             html_solutions += "<input class=\"solution\" type=\"radio\" name=\"gear_train\" " +
               "value=\"" + JSON.stringify(solution) + "\">" +
               JSON.stringify(solution) + "</input><br />";
-          }
-        });
+          });
+      } else if (list_of_solutions.length !== 0) {
+        html_solutions = "Gear trains are being filtered out by \"gears to use\". " +
+          "Check off more boxes!";
+      } else {
+        html_solutions = "No gear trains found :-(";
+      }
+
       $("#solutions").html(html_solutions);
       $(".solution").click(function() {
         lego_canvas("create_gear_train")(JSON.parse($(".solution:checked").val()));

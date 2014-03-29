@@ -86,9 +86,7 @@ var gear_combinations = [
     [7, 7],
     [10, 4],
     [11, 2],
-    [11, 1],
-    // pretty tight, not great
-    [11, 0]
+    [11, 1]
   ]],
 
   [36, 24, [
@@ -209,8 +207,7 @@ var gear_combinations = [
   [16, 8, [
     [0, 3],
     [1, 3],
-    [3, 2],
-    [4, 0]
+    [3, 2]
   ]],
 
   [12, 12, [
@@ -230,8 +227,8 @@ var gear_combinations = [
   ]]
 ];
 
-var gear_combinations_test = [
-  [8, 8, [
-    [0, 1]
-  ]]
-];
+// var gear_combinations_test = [
+//   [8, 8, [
+//     [0, 1]
+//   ]]
+// ];

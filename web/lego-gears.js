@@ -122,54 +122,21 @@ function combine_head_and_tails(head_combo, tail_trains) {
   }
 }
 
-// an objective looks like [up, across, ratio]
-// where ratio is a Fraction object
-function get_total_distance(list_of_objectives, up_unit, across_unit) {
+function get_total_distance(up, across, up_unit, across_unit) {
   "use strict";
-  if (list_of_objectives.length === 0) {
-    return 0;
-  } else {
-    return Math.sqrt(Math.pow(up_unit * list_of_objectives[0][0], 2) + Math.pow(across_unit * list_of_objectives[0][1], 2)) + get_total_distance(_.rest(list_of_objectives), up_unit, across_unit);
-  }
-}
-
-// combo looks like this [first_gear second_gear up across]
-//
-// this function subtracts the combo from the first objective of the
-// list_of_objectives: objectives
-function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
-  "use strict";
-  var new_objective = [list_of_objectives[0][0] - combo[2],
-    list_of_objectives[0][1] - combo[3]
-  ];
-  if (list_of_objectives[0].length === 3) {
-    // use the new Fraction so that if the ratio of the objective isn't a fraction,
-    // it gets turned into one
-    var new_ratio = (new Fraction(list_of_objectives[0][2])).mul(-combo[0], combo[1]);
-    new_objective.push(new_ratio);
-  }
-  return _.cat([new_objective], _.rest(list_of_objectives));
+  return Math.sqrt(Math.pow(up_unit * up, 2) + Math.pow(across_unit * across, 2));
 }
 
 // not going to worry about multiple objectives
-function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two_gears_on_one_axle_allowed) {
+function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";
 
   // returns an array of gear_trains
-  var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear) {
-      var up_left = list_of_objectives_left[0][0];
-      var across_left = list_of_objectives_left[0][1];
-      // if a ratio is not given, ratio_left is undefined, which
-      // is how we detect that a ratio wasn't given
-      var ratio_left = list_of_objectives_left[0][2];
-      if (up_left === 0 && across_left === 0) {
-        if (typeof ratio_left === "undefined" || ratio_left.toDouble() === 1) {
-          if (list_of_objectives_left.length === 1) {
-            return [];
-          } else {
-            // the head objective was met, so remove it and keep going!
-            list_of_objectives_left = _.rest(list_of_objectives_left);
-          }
+  var get_gear_trains = _.memoize(function(up, across, ratio, previous_gear) {
+      if (up === 0 && across === 0) {
+        if (typeof ratio === "undefined" || ratio.toDouble() === 1) {
+          // !!! not sure if this is right
+          return [];
         } else {
           // ratio objective was not met
           return false;
@@ -188,9 +155,14 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
           if (two_gears_on_one_axle_allowed === false && previous_gear !== combo[0]) {
             return false;
           }
-          var new_objectives_left = subtract_combo_from_list_of_objectives(combo, list_of_objectives_left);
-          if (1 + get_total_distance(new_objectives_left, up_unit_in_mm, across_unit_in_mm) < get_total_distance(list_of_objectives_left, up_unit_in_mm, across_unit_in_mm)) {
-            return combine_head_and_tails(combo, get_gear_trains(new_objectives_left, combo[1]));
+          var up_left = up - combo[2];
+          var across_left = across - combo[3];
+          var new_ratio;
+          if (typeof ratio !== "undefined") {
+            new_ratio = (new Fraction(ratio)).mul(-combo[0], combo[1]);
+          }
+          if (1 + get_total_distance(up_left, across_left, up_unit_in_mm, across_unit_in_mm) < get_total_distance(up, across, up_unit_in_mm, across_unit_in_mm)) {
+            return combine_head_and_tails(combo, get_gear_trains(up_left, across_left, new_ratio, combo[1]));
           } else {
             return false;
           }
@@ -209,33 +181,21 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
       }
     },
     // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
-    function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
+    function(up, across, ratio, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
       // turn into an array, then JSON it, then hash it
-      var argument_array = [list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
+      var argument_array = [up, across, ratio, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
       return (hash_code(JSON.stringify(argument_array)));
     });
 
   negative_movements_allowed = negative_movements_allowed ? true : false;
   two_gears_on_one_axle_allowed = two_gears_on_one_axle_allowed ? true : false;
 
-  // make sure the objectives all have the same structure.
-  // most importantly, that the ratios are Fractions
-  var objectives = _.map(list_of_objectives,
-    function(objective) {
-      var clean_objective = [];
-      clean_objective.push(objective[0]);
-      clean_objective.push(objective[1]);
-      // if the ratio exists, turn it into a Fraction
-      if (typeof objective[2] !== "undefined") {
-        if (objective[2].constructor.name === "Fraction") {
-          clean_objective.push(objective[2]);
-        } else {
-          clean_objective.push(new Fraction(objective[2], 1));
-        }
-      }
-      return clean_objective;
-    });
-
+  // if the ratio exists, turn it into a Fraction
+  if (typeof ratio !== "undefined") {
+    if (ratio.constructor.name !== "Fraction") {
+      ratio = new Fraction(ratio);
+    }
+  }
 
   var starting_gears;
   if (two_gears_on_one_axle_allowed === true) {
@@ -246,7 +206,7 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
 
   var gear_trains = _.map(starting_gears,
     function(starting_gear) {
-      return get_gear_trains(objectives, starting_gear);
+      return get_gear_trains(up, across, ratio, starting_gear);
     });
 
   gear_trains = _.filter(gear_trains, function(gear_train) {

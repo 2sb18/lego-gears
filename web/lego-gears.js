@@ -151,72 +151,69 @@ function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
   return _.cat([new_objective], _.rest(list_of_objectives));
 }
 
-// returns an array of gear_trains
-var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
-    "use strict";
-    var up_left = list_of_objectives_left[0][0];
-    var across_left = list_of_objectives_left[0][1];
-    // if a ratio is not given, ratio_left is undefined, which
-    // is how we detect that a ratio wasn't given
-    var ratio_left = list_of_objectives_left[0][2];
-    if (up_left === 0 && across_left === 0) {
-      if (typeof ratio_left === "undefined" || ratio_left.toDouble() === 1) {
-        if (list_of_objectives_left.length === 1) {
-          return [];
-        } else {
-          // the head objective was met, so remove it and keep going!
-          list_of_objectives_left = _.rest(list_of_objectives_left);
-        }
-      } else {
-        // ratio objective was not met
-        return false;
-      }
-    }
-
-    // gear_trains is an array whos elements are either false or arrays of solutions. we're going
-    // to have to get rid of the falsey values with _.filter, and flatten the array of arrays of 
-    // solutions into an array of solutions.
-    var gear_trains = _.map(all_gear_combinations,
-      // each combo will return either false or a list of solutions. so we're going to want to flatten
-      function(combo) {
-        if (negative_movements_allowed === false && (combo[2] < 0 || combo[3] < 0)) {
-          return false;
-        }
-        if (two_gears_on_one_axle_allowed === false && previous_gear !== combo[0]) {
-          return false;
-        }
-        var new_objectives_left = subtract_combo_from_list_of_objectives(combo, list_of_objectives_left);
-        if (1 + get_total_distance(new_objectives_left, up_unit_in_mm, across_unit_in_mm) < get_total_distance(list_of_objectives_left, up_unit_in_mm, across_unit_in_mm)) {
-          return combine_head_and_tails(combo, get_gear_trains(new_objectives_left, combo[1], negative_movements_allowed, two_gears_on_one_axle_allowed));
-        } else {
-          return false;
-        }
-      });
-    // get rid of the falsey values
-    gear_trains = _.filter(gear_trains, function(gear_train) {
-      return gear_train;
-    });
-    // flatten the array of arrays of solutions into an array of solutions
-    gear_trains = _.flatten(gear_trains, true);
-
-    if (gear_trains.length === 0) {
-      return false;
-    } else {
-      return gear_trains;
-    }
-  },
-  // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
-  function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
-    "use strict";
-    // turn into an array, then JSON it, then hash it
-    var argument_array = [list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
-    return (hash_code(JSON.stringify(argument_array)));
-  });
-
-
-
+// not going to worry about multiple objectives
 function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";
+
+  // returns an array of gear_trains
+  var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear) {
+      var up_left = list_of_objectives_left[0][0];
+      var across_left = list_of_objectives_left[0][1];
+      // if a ratio is not given, ratio_left is undefined, which
+      // is how we detect that a ratio wasn't given
+      var ratio_left = list_of_objectives_left[0][2];
+      if (up_left === 0 && across_left === 0) {
+        if (typeof ratio_left === "undefined" || ratio_left.toDouble() === 1) {
+          if (list_of_objectives_left.length === 1) {
+            return [];
+          } else {
+            // the head objective was met, so remove it and keep going!
+            list_of_objectives_left = _.rest(list_of_objectives_left);
+          }
+        } else {
+          // ratio objective was not met
+          return false;
+        }
+      }
+
+      // gear_trains is an array whos elements are either false or arrays of solutions. we're going
+      // to have to get rid of the falsey values with _.filter, and flatten the array of arrays of 
+      // solutions into an array of solutions.
+      var gear_trains = _.map(all_gear_combinations,
+        // each combo will return either false or a list of solutions. so we're going to want to flatten
+        function(combo) {
+          if (negative_movements_allowed === false && (combo[2] < 0 || combo[3] < 0)) {
+            return false;
+          }
+          if (two_gears_on_one_axle_allowed === false && previous_gear !== combo[0]) {
+            return false;
+          }
+          var new_objectives_left = subtract_combo_from_list_of_objectives(combo, list_of_objectives_left);
+          if (1 + get_total_distance(new_objectives_left, up_unit_in_mm, across_unit_in_mm) < get_total_distance(list_of_objectives_left, up_unit_in_mm, across_unit_in_mm)) {
+            return combine_head_and_tails(combo, get_gear_trains(new_objectives_left, combo[1]));
+          } else {
+            return false;
+          }
+        });
+      // get rid of the falsey values
+      gear_trains = _.filter(gear_trains, function(gear_train) {
+        return gear_train;
+      });
+      // flatten the array of arrays of solutions into an array of solutions
+      gear_trains = _.flatten(gear_trains, true);
+
+      if (gear_trains.length === 0) {
+        return false;
+      } else {
+        return gear_trains;
+      }
+    },
+    // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
+    function(list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
+      // turn into an array, then JSON it, then hash it
+      var argument_array = [list_of_objectives_left, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
+      return (hash_code(JSON.stringify(argument_array)));
+    });
 
   negative_movements_allowed = negative_movements_allowed ? true : false;
   two_gears_on_one_axle_allowed = two_gears_on_one_axle_allowed ? true : false;
@@ -249,7 +246,7 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
 
   var gear_trains = _.map(starting_gears,
     function(starting_gear) {
-      return get_gear_trains(objectives, starting_gear, negative_movements_allowed, two_gears_on_one_axle_allowed);
+      return get_gear_trains(objectives, starting_gear);
     });
 
   gear_trains = _.filter(gear_trains, function(gear_train) {
@@ -261,6 +258,5 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
 
   // sort by shortest gear train first
   gear_trains = _.sortBy(gear_trains, "length");
-  // _.sortBy([1, 2, 3, 4, 5, 6], function(num){ return Math.sin(num); });
   return gear_trains;
 }

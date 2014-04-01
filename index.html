@@ -121,9 +121,9 @@
       try {
         $("#status_message").text("computing...");
         var message = {
-          objectives: [
-            [$("#input_up").val(), $("#input_across").val(), $("#input_gear_ratio").val()]
-          ],
+          up: $("#input_up").val(),
+          across: $("#input_across").val(),
+          ratio: $("#input_gear_ratio").val(),
           allow_two_gears_on_same_axle: $("#allow_two_gears_on_same_axle").prop('checked'),
           negative_movements_allowed: $("#negative_movements_allowed").prop('checked')
         }

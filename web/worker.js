@@ -1,4 +1,4 @@
-/* global get_all_gear_trains, _, Fraction */
+/* global get_all_gear_trains, Fraction */
 /* jshint worker:true */
 self.addEventListener("message", function(e) {
   // e.data should be an object with 
@@ -11,24 +11,18 @@ self.addEventListener("message", function(e) {
   // the message is accessible in e.data
 
   try {
-    var objectives = e.data.objectives;
+    e.data.up = +e.data.up;
+    e.data.across = +e.data.across;
 
 
-    // objectives come as strings
-    // convert to what LegoCanvas wants
-    objectives = _.map(objectives,
-      function(objective) {
-        objective[0] = +objective[0];
-        objective[1] = +objective[1];
-        if (objective[2].indexOf('/') !== -1) {
-          objective[2] = new Fraction(objective[2].split('/'));
-        } else {
-          objective[2] = +objective[2];
-        }
-        return objective;
-      });
 
-    self.postMessage(get_all_gear_trains(objectives, e.data.negative_movements_allowed, e.data.allow_two_gears_on_same_axle));
+    if (e.data.ratio.indexOf('/') !== -1) {
+      e.data.ratio = new Fraction(e.data.ratio.split('/'));
+    } else {
+      e.data.ratio = +e.data.ratio;
+    }
+
+    self.postMessage(get_all_gear_trains(e.data.up, e.data.across, e.data.ratio, e.data.negative_movements_allowed, e.data.allow_two_gears_on_same_axle));
   } catch (err) {
     self.postMessage(err);
   }

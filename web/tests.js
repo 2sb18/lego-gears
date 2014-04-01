@@ -119,12 +119,12 @@ test("get_gear_trains", function() {
     "if there is one last remaining objective, and up_left and across_left are zero and the ratio objective is missing, return an empty array.");
 
   deepEqual(get_gear_trains([
-      [0, 0, 1]
+      [0, 0, new Fraction(1)]
     ], 40), [],
     "if there is one objective left, and ratio_left is 1, and up_left and across_left are 0, return an empty array.");
 
   deepEqual(get_gear_trains([
-      [0, 0, 3]
+      [0, 0, new Fraction(3)]
     ], 40), false,
     "if up_left and across_left are 0, but ratio_left is defined but not 1, return false.");
 

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>lego gears profiler</title>
+</head>
+
+<body>
+  <script src="jquery-2.1.0.min.js"></script>
+  <script src="underscore.js"></script>
+  <script type="text/javascript" src="underscore.array.builders.js">
+  </script>
+  <script type="text/javascript" src="fraction.js">
+  </script>
+  <script src="gear-ratios.js"></script>
+  <script src="lego-gears.js"></script>
+
+  <script type="text/javascript">
+    console.profile();
+
+    console.log(
+      get_all_gear_trains([
+        [2, 4, new Fraction(12, 8)]
+      ], false, true));
+    console.profileEnd();
+  </script>
+</body>
+
+</html>

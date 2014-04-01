@@ -136,7 +136,7 @@ function get_total_distance(list_of_objectives, up_unit, across_unit) {
 // combo looks like this [first_gear second_gear up across]
 //
 // this function subtracts the combo from the first objective of the
-// list_of_objectives
+// list_of_objectives: objectives
 function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
   "use strict";
   var new_objective = [list_of_objectives[0][0] - combo[2],
@@ -145,7 +145,7 @@ function subtract_combo_from_list_of_objectives(combo, list_of_objectives) {
   if (list_of_objectives[0].length === 3) {
     // use the new Fraction so that if the ratio of the objective isn't a fraction,
     // it gets turned into one
-    var new_ratio = (new Fraction(list_of_objectives[0][2])).mul(-combo[0], 1).div(combo[1], 1);
+    var new_ratio = (new Fraction(list_of_objectives[0][2])).mul(-combo[0], combo[1]);
     new_objective.push(new_ratio);
   }
   return _.cat([new_objective], _.rest(list_of_objectives));
@@ -160,7 +160,7 @@ var get_gear_trains = _.memoize(function(list_of_objectives_left, previous_gear,
     // is how we detect that a ratio wasn't given
     var ratio_left = list_of_objectives_left[0][2];
     if (up_left === 0 && across_left === 0) {
-      if (typeof ratio_left === "undefined" || new Fraction(1).equals(ratio_left)) {
+      if (typeof ratio_left === "undefined" || ratio_left.toDouble() === 1) {
         if (list_of_objectives_left.length === 1) {
           return [];
         } else {
@@ -233,7 +233,7 @@ function get_all_gear_trains(list_of_objectives, negative_movements_allowed, two
         if (objective[2].constructor.name === "Fraction") {
           clean_objective.push(objective[2]);
         } else {
-          clean_objective.push(new Fraction(objective[2]));
+          clean_objective.push(new Fraction(objective[2], 1));
         }
       }
       return clean_objective;

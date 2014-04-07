@@ -54,8 +54,6 @@ function deeply_unique(array_of_arrays) {
   return array_to_return;
 }
 
-
-
 var all_gear_combinations = (function(gear_combinations) {
   "use strict";
   var first_quadrant = _.flatten(_.map(gear_combinations,

@@ -14,10 +14,10 @@ self.addEventListener("message", function(e) {
     e.data.up = +e.data.up;
     e.data.across = +e.data.across;
 
-
-
     if (e.data.ratio.indexOf('/') !== -1) {
       e.data.ratio = new Fraction(e.data.ratio.split('/'));
+    } else if (e.data.ratio === "") {
+      e.data.ratio = undefined;
     } else {
       e.data.ratio = +e.data.ratio;
     }

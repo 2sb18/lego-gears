@@ -54,8 +54,17 @@ function deeply_unique(array_of_arrays) {
   return array_to_return;
 }
 
-var all_gear_combinations = (function(gear_combinations) {
+function get_gear_combinations(negative_movements_allowed) {
   "use strict";
+
+  function add_inverses_and_remove_duplicates(combos) {
+    var combos_switched = _.map(combos,
+      function(gear_combo) {
+        return [gear_combo[1], gear_combo[0], gear_combo[2], gear_combo[3]];
+      });
+    return deeply_unique(_.cat(combos, combos_switched));
+  }
+
   var first_quadrant = _.flatten(_.map(gear_combinations,
     // compacted_combos would look like [40,36,[[up, across], [up,across]]]
     //
@@ -71,6 +80,11 @@ var all_gear_combinations = (function(gear_combinations) {
           ];
         });
     }), true);
+
+  if (!negative_movements_allowed) {
+    return add_inverses_and_remove_duplicates(first_quadrant);
+  }
+
   var second_quadrant = _.map(first_quadrant,
     function(gear_combo) {
       var cloned = _.clone(gear_combo);
@@ -92,13 +106,8 @@ var all_gear_combinations = (function(gear_combinations) {
       return cloned;
     });
   var all_quadrants = _.cat(first_quadrant, second_quadrant, third_quadrant, fourth_quadrant);
-  var all_quadrants_switched = _.map(all_quadrants,
-    function(gear_combo) {
-      return [gear_combo[1], gear_combo[0], gear_combo[2], gear_combo[3]];
-    });
-  return deeply_unique(_.cat(all_quadrants, all_quadrants_switched));
-})(gear_combinations);
-
+  return add_inverses_and_remove_duplicates(all_quadrants);
+}
 
 // return a list of gear-trains
 function combine_head_and_tails(head_combo, tail_trains) {
@@ -129,6 +138,12 @@ function get_total_distance(up, across, up_unit, across_unit) {
 function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";
 
+  var gear_combinations = get_gear_combinations(negative_movements_allowed);
+
+
+
+
+
   // returns an array of gear_trains
   var get_gear_trains = _.memoize(function(up, across, ratio, previous_gear) {
       if (up === 0 && across === 0) {
@@ -144,7 +159,7 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
       // gear_trains is an array whos elements are either false or arrays of solutions. we're going
       // to have to get rid of the falsey values with _.filter, and flatten the array of arrays of 
       // solutions into an array of solutions.
-      var gear_trains = _.map(all_gear_combinations,
+      var gear_trains = _.map(gear_combinations,
         // each combo will return either false or a list of solutions. so we're going to want to flatten
         function(combo) {
           if (negative_movements_allowed === false && (combo[2] < 0 || combo[3] < 0)) {

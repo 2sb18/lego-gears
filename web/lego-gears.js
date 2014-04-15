@@ -134,21 +134,53 @@ function get_total_distance(up, across, up_unit, across_unit) {
   return Math.sqrt(Math.pow(up_unit * up, 2) + Math.pow(across_unit * across, 2));
 }
 
+
+// Fraction object pool
+
+// fraction_pool is an array of objects
+// the object looks like { fraction: fraction_object, in_use: true }
+var fraction_pool = [];
+
+var new_fraction = 0;
+var recycled_fraction = 0;
+
+// 
+function get_unused_fraction() {
+  "use strict";
+
+  // try to go through all of the fraction pool to find an available fraction
+  var found_fraction = _.findWhere(fraction_pool, {
+    in_use: false
+  });
+  if (typeof found_fraction === "undefined") {
+    found_fraction = {
+      fraction: new Fraction(0),
+      in_use: true
+    };
+    new_fraction++;
+    fraction_pool.push(found_fraction);
+  } else {
+    found_fraction.in_use = true;
+    recycled_fraction++;
+  }
+  return found_fraction;
+}
+
+function free_fraction(ratio_from_pool) {
+  "use strict";
+  ratio_from_pool.in_use = false;
+}
+
 // not going to worry about multiple objectives
 function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";
 
   var gear_combinations = get_gear_combinations(negative_movements_allowed);
 
-
-
-
-
   // returns an array of gear_trains
-  var get_gear_trains = _.memoize(function(up, across, ratio, previous_gear) {
+  var get_gear_trains = _.memoize(function(up, across, ratio_from_pool, previous_gear) {
       if (up === 0 && across === 0) {
-        if (typeof ratio === "undefined" || ratio.toDouble() === 1) {
-          // !!! not sure if this is right
+        if (typeof ratio_from_pool === "undefined" || ratio_from_pool.fraction.toDouble() === 1) {
           return [];
         } else {
           // ratio objective was not met
@@ -170,13 +202,19 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
           }
           var up_left = up - combo[2];
           var across_left = across - combo[3];
-          var new_ratio;
-          if (typeof ratio !== "undefined") {
-            new_ratio = (new Fraction(ratio)).mul(-combo[0], combo[1]);
+          var new_ratio_from_pool;
+          if (typeof ratio_from_pool !== "undefined") {
+            // get new Fraction from Fraction object pool
+            new_ratio_from_pool = get_unused_fraction();
+            new_ratio_from_pool.fraction.set(ratio_from_pool.fraction);
+            new_ratio_from_pool.fraction.mul(-combo[0], combo[1]);
           }
           if (1 + get_total_distance(up_left, across_left, up_unit_in_mm, across_unit_in_mm) < get_total_distance(up, across, up_unit_in_mm, across_unit_in_mm)) {
-            return combine_head_and_tails(combo, get_gear_trains(up_left, across_left, new_ratio, combo[1]));
+            var partial_gear_trains = combine_head_and_tails(combo, get_gear_trains(up_left, across_left, new_ratio_from_pool, combo[1]));
+            free_fraction(new_ratio_from_pool);
+            return partial_gear_trains;
           } else {
+            free_fraction(new_ratio_from_pool);
             return false;
           }
         });
@@ -194,20 +232,21 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
       }
     },
     // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
-    function(up, across, ratio, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
+    function(up, across, ratio_from_pool, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
       // turn into an array, then JSON it, then hash it
-      var argument_array = [up, across, ratio, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
+      var argument_array = [up, across, ratio_from_pool.fraction, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
       return (hash_code(JSON.stringify(argument_array)));
     });
 
   negative_movements_allowed = negative_movements_allowed ? true : false;
   two_gears_on_one_axle_allowed = two_gears_on_one_axle_allowed ? true : false;
 
+  var ratio_from_pool;
+
   // if the ratio exists, turn it into a Fraction
   if (typeof ratio !== "undefined") {
-    if (ratio.constructor.name !== "Fraction") {
-      ratio = new Fraction(ratio);
-    }
+    ratio_from_pool = get_unused_fraction();
+    ratio_from_pool.fraction.set(ratio);
   }
 
   var starting_gears;
@@ -219,7 +258,7 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
 
   var gear_trains = _.map(starting_gears,
     function(starting_gear) {
-      return get_gear_trains(up, across, ratio, starting_gear);
+      return get_gear_trains(up, across, ratio_from_pool, starting_gear);
     });
 
   gear_trains = _.filter(gear_trains, function(gear_train) {

@@ -14,7 +14,6 @@
 // a gear combo will just be an array of 4 numbers
 // [ first_gear, second_gear, up, across ]
 //
-//
 
 function hash_code(str) {
   "use strict";

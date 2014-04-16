@@ -154,4 +154,17 @@ test("get_all_gear_trains", function() {
       ]
     ],
     "can return multiple solutions.");
+
+  deepEqual(get_all_gear_trains(3, 2, undefined, false, false), [
+      [
+        [16, 8, 3, 2]
+      ],
+      [
+        [12, 12, 3, 2]
+      ],
+      [
+        [8, 16, 3, 2]
+      ]
+    ],
+    "can solve for undefined ratio.");
 });

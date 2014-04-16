@@ -6,6 +6,7 @@ self.addEventListener("message", function(e) {
   importScripts("underscore.js");
   importScripts("underscore.array.builders.js");
   importScripts("fraction.js");
+  importScripts("object-pool.js");
   importScripts("gear-ratios.js");
   importScripts("lego-gears.js");
   // the message is accessible in e.data

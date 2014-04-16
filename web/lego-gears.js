@@ -15,15 +15,15 @@
 // [ first_gear, second_gear, up, across ]
 //
 
+// Javascript implementation of Java's String.hashCode()
 function hash_code(str) {
   "use strict";
   var hash = 0;
   if (str.length === 0) {
-    return hash;
+    return 0;
   }
   for (var i = 0; i < str.length; i++) {
-    var character = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + character;
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   return hash;
@@ -170,6 +170,31 @@ function free_fraction(ratio_from_pool) {
   ratio_from_pool.in_use = false;
 }
 
+var memo;
+var memo_lookup_found;
+var memo_lookup_missing;
+
+
+// memoize from underscore.js
+// copied it into here so I can analyze the memoization
+function memoize(func, hasher) {
+  "use strict";
+  memo = {};
+  memo_lookup_found = 0;
+  memo_lookup_missing = 0;
+  return function() {
+    var key = hasher.apply(this, arguments);
+    if (_.has(memo, key)) {
+      memo_lookup_found++;
+      return memo[key];
+    } else {
+      memo_lookup_missing++;
+      memo[key] = func.apply(this, arguments);
+    }
+    return memo[key];
+  };
+}
+
 // not going to worry about multiple objectives
 function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";
@@ -177,7 +202,7 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
   var gear_combinations = get_gear_combinations(negative_movements_allowed);
 
   // returns an array of gear_trains
-  var get_gear_trains = _.memoize(function(up, across, ratio_from_pool, previous_gear) {
+  var get_gear_trains = memoize(function(up, across, ratio_from_pool, previous_gear) {
       if (up === 0 && across === 0) {
         if (typeof ratio_from_pool === "undefined" || ratio_from_pool.fraction.toDouble() === 1) {
           return [];
@@ -230,10 +255,12 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
         return gear_trains;
       }
     },
-    // this is the hash function. the arguments to it would be (list_of_objectives_left, previous_gear, and optionals) 
-    function(up, across, ratio_from_pool, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed) {
+    // this is the hash function. the arguments to are the same
+    // as the arguments to the 
+    // up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed
+    function(up, across, ratio_from_pool, previous_gear) {
       // turn into an array, then JSON it, then hash it
-      var argument_array = [up, across, ratio_from_pool.fraction, previous_gear, negative_movements_allowed, two_gears_on_one_axle_allowed];
+      var argument_array = [up, across, ratio_from_pool.fraction, previous_gear];
       return (hash_code(JSON.stringify(argument_array)));
     });
 
@@ -269,5 +296,6 @@ function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_
 
   // sort by shortest gear train first
   gear_trains = _.sortBy(gear_trains, "length");
+
   return gear_trains;
 }

@@ -16,11 +16,13 @@
   <script src="lego-gears.js"></script>
 
   <script type="text/javascript">
-    console.profile();
+    // console.profile();
+    console.time("Find gear trains");
 
     console.log(
-      get_all_gear_trains(15, 15, new Fraction(12, 8), false, false));
-    console.profileEnd();
+      get_all_gear_trains(8, 8, new Fraction(12, 8), false, false));
+     // console.profileEnd();
+    console.timeEnd("Find gear trains");
   </script>
 </body>
 

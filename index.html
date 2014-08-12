@@ -12,13 +12,12 @@
 
   <style>
     body {
-      background-color: black
+      color: white;
+      background-color: black;
+      font-family: monospace;
     }
-    p {
-      color: white
-    }
-    div {
-      color: white
+    h1 {
+      text-align: center;
     }
     input {
       margin: 10px
@@ -29,11 +28,13 @@
 </head>
 
 <body>
+  <h1>lego-gears: helping you find gear trains the easy way</h1>
+  <hr />
   <p>
     Plates up:
-    <input type="text" id="input_up" />Half pins across:
-    <input type="text" id="input_across" />Gear ratio:
-    <input type="text" id="input_gear_ratio" />
+    <input type="text" id="plates_up" />Half pins across:
+    <input type="text" id="half_pins_across" />Gear ratio:
+    <input type="text" id="gear_ratio" />
     <br />
     <input type="submit" id="submit" value="find gear trains" />
     <span id="status_message">Ready.</span>
@@ -122,9 +123,9 @@
       try {
         $("#status_message").text("computing...");
         var message = {
-          up: $("#input_up").val(),
-          across: $("#input_across").val(),
-          ratio: $("#input_gear_ratio").val(),
+          up: $("#plates_up").val(),
+          across: $("#half_pins_across").val(),
+          ratio: $("#gear_ratio").val(),
           allow_two_gears_on_same_axle: $("#allow_two_gears_on_same_axle").prop('checked'),
           negative_movements_allowed: $("#negative_movements_allowed").prop('checked')
         }
@@ -147,6 +148,25 @@
     alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png">
   </a>
 
+  <script>
+    function getQueryVariable(variable) {
+      var query = window.location.search.substring(1);
+      var vars = query.split("&");
+      for (var i = 0; i < vars.length; i++) {
+        var pair = vars[i].split("=");
+        if (pair[0] == variable) {
+          return pair[1];
+        }
+      }
+      return (false);
+    }
+
+    $("input").each(function() {
+      if (getQueryVariable($(this).attr("id"))) {
+        $(this).val(getQueryVariable($(this).attr("id")));
+      }
+    });
+  </script>
 
 </body>
 

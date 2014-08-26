@@ -1,6 +1,8 @@
 /* global test, deepEqual, equal, ok */
-/* global deeply_unique, combine_head_and_tails, get_total_distance */
+/* global deeply_unique, combine_head_and_tails, get_total_distance, get_ratio_of_combo */
+/* global get_ratio_of_gear_train */
 /* global get_all_gear_trains */
+/* global get_all_gear_trains_interface */
 /* global hash_code */
 /* global Fraction */
 /* jshint globalstrict:true */
@@ -80,6 +82,27 @@ test("get_total_distance", function() {
     "calculates piecewise distance between objectives.");
 });
 
+test("get_ratio_of_combo", function() {
+  ok(get_ratio_of_combo([8, 24, 3, 4]).equals(new Fraction(-3)),
+    "ratio of [8,24,3,4] correctly calculated as -3");
+});
+
+test("get_ratio_of_gear_train", function() {
+  ok(get_ratio_of_gear_train([
+      [8, 16, 1, 3],
+      [16, 8, 1, 3],
+      [8, 16, 0, 3],
+      [16, 8, 0, 3],
+      [8, 12, 3, 1]
+    ]).equals(new Fraction(-3, 2)),
+    "ratio of gear_train is calculated correctly");
+  ok(get_ratio_of_gear_train([
+      [36, 20, 8, 3],
+      [12, 8, 3, 1]
+    ]).equals(new Fraction(20 * 8, 12 * 36)),
+    "gear_train ratio correctly calculated");
+});
+
 test("get_all_gear_trains", function() {
   deepEqual(get_all_gear_trains(0, 2, -1), [
       [
@@ -155,7 +178,30 @@ test("get_all_gear_trains", function() {
     ],
     "can return multiple solutions.");
 
+
   deepEqual(get_all_gear_trains(3, 2, undefined, false, false), [
+      [
+        [16, 8, 3, 2]
+      ],
+      [
+        [12, 12, 3, 2]
+      ],
+      [
+        [8, 16, 3, 2]
+      ]
+    ],
+    "can solve for undefined ratio.");
+});
+
+test("get_all_gear_trains_interface", function() {
+  deepEqual(get_all_gear_trains_interface(4, 4, 2, false, false), [
+      [
+        [8, 8, 1, 2],
+        [8, 16, 3, 2]
+      ]
+    ],
+    "There's one solution for 4 up, 4 across, with a gear ratio of 2");
+  deepEqual(get_all_gear_trains_interface(3, 2, undefined, false, false), [
       [
         [16, 8, 3, 2]
       ],

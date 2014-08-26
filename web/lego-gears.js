@@ -139,6 +139,8 @@ var fraction_pool = object_pool(function() {
   return new Fraction(0);
 });
 
+// variables for doing statistics on the effectiveness of
+// memoization
 var memo;
 var memo_lookup_found;
 var memo_lookup_missing;
@@ -163,6 +165,30 @@ function memoize(func, hasher) {
   };
 }
 
+
+function get_ratio_of_combo(gear_combo) {
+  "use strict";
+  return new Fraction(-gear_combo[1], gear_combo[0]);
+}
+
+function get_ratio_of_gear_train(gear_train) {
+  "use strict";
+
+  // gear_train is an array of gear_combos
+  // go through each gear_combos
+  return _.reduce(gear_train, function(product, gear_combo) {
+    return product.mul(get_ratio_of_combo(gear_combo));
+  }, new Fraction(1));
+}
+
+// this is the main function that gets called
+// by worker.js
+//
+// returns an array of gear_trains
+// a gear_train is an array of gear_combos
+// and a gear_combo is an array of four values
+//
+//
 // not going to worry about multiple objectives
 function get_all_gear_trains(up, across, ratio, negative_movements_allowed, two_gears_on_one_axle_allowed) {
   "use strict";

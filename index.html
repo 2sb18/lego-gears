@@ -9,6 +9,7 @@
   <script type="text/javascript" src="object-pool.js"></script>
   <script src="web/raphael-min.js"></script>
   <script src="web/LegoCanvas.js"></script>
+  <script src="web/worker.js"></script>
 
   <style>
     body {
@@ -82,6 +83,7 @@
         gears[$(this).val()] = $(this).prop('checked');
       });
 
+      // filter the solutions to only include the preferred gears
       var solutions_with_preferred_gears = _.filter(list_of_solutions,
         function(solution) {
           return _.every(solution,
@@ -115,9 +117,14 @@
       throw event.message + " (" + event.filename + ":" + event.lineno + ")";
     };
     worker.onmessage = function(event) {
-      $("#status_message").text("Ready.");
-      list_of_solutions = event.data;
-      update_list_of_solutions();
+      // if the worker returns a string, you know there's a problem
+      if (typeof event.data === "string") {
+        $("#status_message").text(event.data);
+      } else {
+        $("#status_message").text("Ready.");
+        list_of_solutions = event.data;
+        update_list_of_solutions();
+      }
     };
     $("#submit").click(function() {
       try {
